@@ -22,7 +22,7 @@ VIDEO
 
 Any video size supported, the video device will be rendered centered on the HW screen. The default HW screen is the TOP screen
 
-Four bpp values supported : 32 (RGBA), 24 (RGB), 16 (RGB565), 15 (RGB555_A1)
+Four bpp values supported : 32 (RGBA8), 24 (RGB8), 16 (RGB565), 15 (RGB555_A1)
 
 The SDL_FULLSCREEN option stretchs the video device on the HW screen.
 
@@ -65,7 +65,7 @@ NOTE: circle pad and C-Stick are not mapped to the direction key by default( cir
 	SDL_N3DSKeyBind(KEY_CPAD_LEFT|KEY_CSTICK_LEFT, SDLK_LEFT);
 	SDL_N3DSKeyBind(KEY_CPAD_DOWN|KEY_CSTICK_DOWN, SDLK_DOWN);
 
-It's not possible to binf a N3DS key to two or more SDL Key values.
+It's not possible to bind a N3DS key to two or more SDL Key values.
 
 JOYSTICK
 
