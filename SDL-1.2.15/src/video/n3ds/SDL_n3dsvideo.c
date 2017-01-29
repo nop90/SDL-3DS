@@ -124,7 +124,6 @@ void drawTexture( int x, int y, int width, int height, float left, float right, 
 static int N3DS_VideoInit(_THIS, SDL_PixelFormat *vformat);
 static SDL_Rect **N3DS_ListModes(_THIS, SDL_PixelFormat *format, Uint32 flags);
 static SDL_Surface *N3DS_SetVideoMode(_THIS, SDL_Surface *current, int width, int height, int bpp, Uint32 flags);
-static int N3DS_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors);
 static void N3DS_VideoQuit(_THIS);
 
 /* Hardware surface functions */
@@ -133,9 +132,6 @@ static int N3DS_LockHWSurface(_THIS, SDL_Surface *surface);
 static void N3DS_UnlockHWSurface(_THIS, SDL_Surface *surface);
 static void N3DS_FreeHWSurface(_THIS, SDL_Surface *surface);
 static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface); 
-
-/* etc. */
-static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects);
 
 //Copied from sf2dlib that grabbet it from: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
 unsigned int next_pow2(unsigned int v)
@@ -190,8 +186,8 @@ static SDL_VideoDevice *N3DS_CreateDevice(int devindex)
 	device->ListModes = N3DS_ListModes;
 	device->SetVideoMode = N3DS_SetVideoMode;
 	device->CreateYUVOverlay = NULL;
-	device->SetColors = N3DS_SetColors;
-	device->UpdateRects = N3DS_UpdateRects;
+	device->SetColors = NULL;
+	device->UpdateRects = NULL;
 	device->VideoQuit = N3DS_VideoQuit;
 	device->AllocHWSurface = N3DS_AllocHWSurface;
 	device->CheckHWBlit = NULL;
@@ -262,6 +258,8 @@ int hh= next_pow2(height);
 	this->hidden->fitscreen = flags & (SDL_FITWIDTH | SDL_FITHEIGHT);
 
 	switch(bpp) {
+		case 0:
+			bpp = 32;
 		case 32:
 			Rmask = 0xff000000; 
 			Gmask = 0x00ff0000;
@@ -279,18 +277,19 @@ int hh= next_pow2(height);
 			this->hidden->byteperpixel=3;
 			break;
 		case 16:
-			Rmask = 0b1111100000000000; 
-			Gmask = 0b0000011111100000;
-			Bmask = 0b0000000000011111;
-			Amask = 0x0;
+			Rmask == 0xF800;
+            Gmask == 0x07E0;
+            Bmask == 0x001F;
+            Amask == 0x0000;
 			this->hidden->mode=GSP_RGB565_OES;
 			this->hidden->byteperpixel=2;
 			break;
 		case 15:
-			Rmask = 0b1111100000000000; 
-			Gmask = 0b0000011111000000;
-			Bmask = 0b0000000000111110;
-			Amask = 0b1;
+			bpp = 16;
+			Rmask == 0xF800;
+            Gmask == 0x07C0;
+            Bmask == 0x003E;
+            Amask == 0x0001;
 			this->hidden->mode=GSP_RGB5_A1_OES;
 			this->hidden->byteperpixel=2;
 			break;
@@ -335,7 +334,7 @@ int hh= next_pow2(height);
  	printf("Setting mode %d %dx%d\n", this->hidden->mode, width, height); 
 
 	/* Set up the new mode framebuffer */
-	current->flags = SDL_FULLSCREEN | SDL_SWSURFACE| SDL_DOUBLEBUF;
+	current->flags =  SDL_HWSURFACE | SDL_DOUBLEBUF;//SDL_FULLSCREEN | SDL_SWSURFACE| SDL_DOUBLEBUF;
 	this->hidden->w = hw;
 	this->hidden->h = hh;
 
@@ -438,39 +437,6 @@ static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface) {
 	C3D_FrameEnd(0);
 	// todo: we should flip databuffers here
 	return (0);
-}
-
-static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
-{
-
-	if(pvd==NULL) return;
-	if(pvd->buffer==NULL) return;
-	GSPGPU_FlushDataCache(pvd->buffer, pvd->w*pvd->h*pvd->byteperpixel);
-
-	C3D_FrameBegin(C3D_FRAME_NONBLOCK);
-
-	C3D_TexBind(0, &spritesheet_tex);
-	C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
-	// Convert image to 3DS tiled texture format
-	C3D_SafeDisplayTransfer ((u32*)pvd->buffer, GX_BUFFER_DIM(pvd->w, pvd->h), (u32*)spritesheet_tex.data, GX_BUFFER_DIM(pvd->w, pvd->h), textureTranferFlags[pvd->mode]);
-	gspWaitForPPF();
-	if (pvd->screens & SDL_TOPSCR) {
-		C3D_FrameDrawOn(VideoSurface1);
-		drawTexture((400-pvd->w1*pvd->scalex)/2,(240-pvd->h1*pvd->scaley)/2, pvd->w1*pvd->scalex, pvd->h1*pvd->scaley, pvd->l1, pvd->r1, pvd->t1, pvd->b1);  
-	}
-	if (pvd->screens & SDL_BOTTOMSCR) {
-		C3D_FrameDrawOn(VideoSurface2);
-		drawTexture((400-pvd->w2*pvd->scalex2)/2,(240-pvd->h2*pvd->scaley2)/2, pvd->w2*pvd->scalex2, pvd->h2*pvd->scaley2, pvd->l2, pvd->r2, pvd->t2, pvd->b2);  
-	}
-
-	C3D_FrameEnd(0);
-
-}
-
-int N3DS_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors)
-{
-	/* do nothing of note. */
-	return(1);
 }
 
 /* Note:  If we are terminated, this could be called in the middle of
