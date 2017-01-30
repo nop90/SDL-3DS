@@ -1,25 +1,23 @@
 # SDL-3DS
 SDL 1.2 for 3DS
 
-
-
-
-
    Simple DirectMedia Layer
 
-                                  (SDL)
+												(SDL)
 
                                 Version 1.2.15 Nintendo 3DS port
 ---
 
 TOC
+============
 - Video
 - Key input
 - Joystick
+- Mousepointer
 - Audio
 
 VIDEO
-
+============
 Any video size supported, the video device will be rendered centered on the HW screen. The default HW screen is the TOP screen
 
 Four bpp values supported : 32 (RGBA8), 24 (RGB8), 16 (RGB565), 15 (RGB555_A1)
@@ -38,7 +36,7 @@ The following custom option for the video device are defines:
 Note: using the SDL_FULLSCREEN flag is the same of using (SDL_TOPSCR | SDL_BOTTOMSCR) 
 
 KEY INPUT
-
+============
 default key bindings are:
 
  KEY_A -> SDLK_a
@@ -68,13 +66,21 @@ NOTE: circle pad and C-Stick are not mapped to the direction key by default( cir
 It's not possible to bind a N3DS key to two or more SDL Key values.
 
 JOYSTICK
+============
 
 Joystick support is enabled but needs testin (and probably fixing)
 
+
+MOUSEPOINTER
+============
+
+Mouse pointer is controlled with the touchpad. Touching the bottom screen controls the pointer position and trigger a left button click.
+
+
 AUDIO
+============
 
-Audio is disabled and starting and an Init Audio will stop the program
-
+Audio is disabled and Init Audio will stop the program with an assertion failed error
 
 
  
