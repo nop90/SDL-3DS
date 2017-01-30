@@ -73,7 +73,7 @@
 	GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO))
 #define DISPLAY_TRANSFER_FLAGS2 \
 	(GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) | \
-	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB565) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB565) | \
+	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB5A1) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB565) | \
 	GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO))
 #define DISPLAY_TRANSFER_FLAGS3 \
 	(GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) | \
@@ -92,7 +92,7 @@
 	GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO))
 #define TEXTURE_TRANSFER_FLAGS2 \
 	(GX_TRANSFER_FLIP_VERT(1) | GX_TRANSFER_OUT_TILED(1) | GX_TRANSFER_RAW_COPY(0) | \
-	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB565) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB565) | \
+	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB565) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB5A1) | \
 	GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO))
 #define TEXTURE_TRANSFER_FLAGS3 \
 	(GX_TRANSFER_FLIP_VERT(1) | GX_TRANSFER_OUT_TILED(1) | GX_TRANSFER_RAW_COPY(0) | \
@@ -277,19 +277,19 @@ int hh= next_pow2(height);
 			this->hidden->byteperpixel=3;
 			break;
 		case 16:
-			Rmask == 0xF800;
-            Gmask == 0x07E0;
-            Bmask == 0x001F;
-            Amask == 0x0000;
+			Rmask = 0xF800;
+            Gmask = 0x07E0;
+            Bmask = 0x001F;
+            Amask = 0x0000;
 			this->hidden->mode=GSP_RGB565_OES;
 			this->hidden->byteperpixel=2;
 			break;
 		case 15:
 			bpp = 16;
-			Rmask == 0xF800;
-            Gmask == 0x07C0;
-            Bmask == 0x003E;
-            Amask == 0x0001;
+			Rmask = 0xF800;
+			Gmask = 0x07C0;
+			Bmask = 0x003E;
+			Amask = 0x0001;
 			this->hidden->mode=GSP_RGB5_A1_OES;
 			this->hidden->byteperpixel=2;
 			break;
@@ -384,6 +384,11 @@ int hh= next_pow2(height);
 	current->h = height;
 	current->pitch = hw * this->hidden->byteperpixel;
 	current->pixels = this->hidden->buffer;
+
+// NOTE: the following is a dirty hack to make work mode 2. Passing a RGB565 buffer to a RGB656 texture and rendering it to a RGB656 display results in some colors being transparent.
+// To fix this we are transfering a RGB656 buffer to a RGB5A1 texure and then rendering it to a RGB656 display. We lose 1 bit of Green color depth, but at least it works
+	int mode = this->hidden->mode;
+	if (mode==2) mode = 3; 
 
 	// Setup the textures
 	C3D_TexInit(&spritesheet_tex, hw, hh, this->hidden->mode);
