@@ -57,7 +57,6 @@ OBJS =	src/SDL.o \
 	src/video/SDL_video.o \
 	src/video/SDL_yuv.o \
 	src/video/SDL_yuv_sw.o \
-	src/video/n3ds/vshader_shbin.h \
 	src/video/n3ds/vshader.shbin.o \
 	src/video/n3ds/SDL_n3dsevents.o \
 	src/video/n3ds/SDL_n3dsvideo.o \
