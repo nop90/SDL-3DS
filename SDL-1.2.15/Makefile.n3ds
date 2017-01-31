@@ -57,10 +57,11 @@ OBJS =	src/SDL.o \
 	src/video/SDL_video.o \
 	src/video/SDL_yuv.o \
 	src/video/SDL_yuv_sw.o \
+	src/video/n3ds/vshader_shbin.h \
+	src/video/n3ds/vshader.shbin.o \
 	src/video/n3ds/SDL_n3dsevents.o \
 	src/video/n3ds/SDL_n3dsvideo.o \
 	src/video/n3ds/SDL_n3dsmouse.o \
-	src/video/n3ds/vshader.shbin.o
 
 CTRULIB	:= $(DEVKITPRO)/libctru
 INCLUDES = -I./include -I$(CTRULIB)/include
@@ -70,9 +71,9 @@ INCLUDES = -I./include -I$(CTRULIB)/include
 #---------------------------------------------------------------------------------
 ARCH		:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard
 CFLAGS		:=	-g -Wall -O2 -mword-relocations \
-			-fomit-frame-pointer -ffast-math \
-			$(ARCH)
-CFLAGS		+=	$(INCLUDES) -DARM11 -D_3DS -D__3DS__ -DSDL_BUILDING_3DS
+				-fomit-frame-pointer -ffast-math \
+				$(ARCH)
+CFLAGS		+=	$(INCLUDES) -DARM11 -D_3DS -D__3DS__
 CXXFLAGS	:=      $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 ASFLAGS		:=	-g $(ARCH)
 LDFLAGS		:=	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
@@ -86,6 +87,20 @@ all: $(OBJS) $(TARGET_LIB)
 $(TARGET_LIB): $(OBJS)
 	$(AR) -rc $@ $^
 
+#---------------------------------------------------------------------------------
+# rules for assembling GPU shaders
+#---------------------------------------------------------------------------------
+
+%.shbin.o: %.pica
+	@echo $(notdir $<)
+	$(eval CURBIN := $(patsubst %.pica,%.shbin,$(notdir $<)))
+	$(eval CURH := $(patsubst %.pica,%.psh.h,$(notdir $<)))
+	@picasso -h $(CURH) -o $(CURBIN) $<
+	@bin2s $(CURBIN) | $(AS) -o $@
+	@echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(CURBIN) | tr . _)`.h
+	@echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURBIN) | tr . _)`.h
+	@echo "extern const u32" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(CURBIN) | tr . _)`.h
+
 install: $(TARGET_LIB)
 	@mkdir -p "$(DEVKITPRO)/portlibs/armv6k/lib"
 	@cp  $(TARGET_LIB) "$(DEVKITPRO)/portlibs/armv6k/lib"
@@ -95,3 +110,4 @@ install: $(TARGET_LIB)
 
 clean:
 	@rm -rf $(OBJS) $(TARGET_LIB)
+	
