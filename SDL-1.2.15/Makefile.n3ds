@@ -14,6 +14,7 @@ OBJS =	src/SDL.o \
 	src/audio/SDL_audiodev.o \
 	src/audio/SDL_mixer.o \
 	src/audio/SDL_wave.o \
+	src/audio/n3ds/SDL_n3dsaudio.o \
 	src/audio/dummy/SDL_dummyaudio.o \
 	src/cdrom/SDL_cdrom.o \
 	src/cdrom/dummy/SDL_syscdrom.o \

@@ -110,8 +110,6 @@ C3D_RenderTarget *VideoSurface1;
 C3D_RenderTarget *VideoSurface2;
 static C3D_Tex spritesheet_tex;
 
-struct SDL_PrivateVideoData * pvd = NULL;
-
 static int textureTranferFlags[4] = { TEXTURE_TRANSFER_FLAGS0, TEXTURE_TRANSFER_FLAGS1, TEXTURE_TRANSFER_FLAGS2, TEXTURE_TRANSFER_FLAGS3};
 static int displayTranferFlags[4] = { DISPLAY_TRANSFER_FLAGS0, DISPLAY_TRANSFER_FLAGS1, DISPLAY_TRANSFER_FLAGS2, DISPLAY_TRANSFER_FLAGS3};
 static unsigned int clearcolors[4] = { CLEAR_COLOR0, CLEAR_COLOR1, CLEAR_COLOR2, CLEAR_COLOR3};
@@ -179,8 +177,6 @@ static SDL_VideoDevice *N3DS_CreateDevice(int devindex)
 	}
 	SDL_memset(device->hidden, 0, (sizeof *device->hidden));
 	
-	pvd = device->hidden; // dirty, but makes some thing faster
-
 	/* Set the function pointers */
 	device->VideoInit = N3DS_VideoInit;
 	device->ListModes = N3DS_ListModes;
