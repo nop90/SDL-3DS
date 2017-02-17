@@ -20,13 +20,12 @@
 */
 //#include "../../SDL_internal.h"
 
-#if SDL_THREAD_N3DS
-
 /* An implementation of condition variables using semaphores and mutexes */
 /*
    This implementation borrows heavily from the BeOS condition variable
    implementation, written by Christopher Tate and Owen Smith.  Thanks!
  */
+#include "SDL_config.h"
 
 #include "SDL_thread.h"
 
@@ -84,7 +83,8 @@ int
 SDL_CondSignal(SDL_cond * cond)
 {
     if (!cond) {
-        return SDL_SetError("Passed a NULL condition variable");
+        SDL_SetError("Passed a NULL condition variable");
+        return -1;
     }
 
     /* If there are waiting threads not already signalled, then
@@ -108,7 +108,8 @@ int
 SDL_CondBroadcast(SDL_cond * cond)
 {
     if (!cond) {
-        return SDL_SetError("Passed a NULL condition variable");
+        SDL_SetError("Passed a NULL condition variable");
+        return -1;
     }
 
     /* If there are waiting threads not already signalled, then
@@ -164,7 +165,8 @@ SDL_CondWaitTimeout(SDL_cond * cond, SDL_mutex * mutex, Uint32 ms)
     int retval;
 
     if (!cond) {
-        return SDL_SetError("Passed a NULL condition variable");
+        SDL_SetError("Passed a NULL condition variable");
+        return -1;
     }
 
     /* Obtain the protection mutex, and increment the number of waiters.
@@ -218,7 +220,3 @@ SDL_CondWait(SDL_cond * cond, SDL_mutex * mutex)
 {
     return SDL_CondWaitTimeout(cond, mutex, SDL_MUTEX_MAXWAIT);
 }
-
-#endif /* SDL_THREAD_N3DS */
-
-/* vi: set ts=4 sw=4 expandtab: */

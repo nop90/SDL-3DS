@@ -111,6 +111,13 @@ void N3DS_InitOSKeymap(_THIS)
 	keymap[29]=SDLK_UNKNOWN; 
 	keymap[30]=SDLK_UNKNOWN; 
 	keymap[31]=SDLK_UNKNOWN; 
+
+// init the key state
+	int i;
+	hidScanInput();
+	for (i = 0; i < N3DS_NUMKEYS; i++)
+		keymem[i] = (hidKeysHeld() & (1 << i))?1:0;
+
 }
 
 void SDL_N3DSKeyBind(unsigned int hidkey, SDLKey key) {

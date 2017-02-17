@@ -27,6 +27,11 @@ Uint32 SDL_GetTicks (void) {
 }
 
 void SDL_Delay (Uint32 ms) {
+#ifdef SDL_THREAD_N3DS
+	if (threadGetCurrent != NULL)
+		svcSleepThread((Uint64)ms * 1000000);
+	else {
+#endif
 	int was_error;
 	struct timeval tv;
 	Uint32 then, now, elapsed;
@@ -47,6 +52,9 @@ void SDL_Delay (Uint32 ms) {
 
 		was_error = select(0, NULL, NULL, NULL, &tv);
 	} while (was_error);
+#ifdef SDL_THREAD_N3DS
+	}
+#endif
 }
 
 int SDL_SYS_TimerInit (void) {

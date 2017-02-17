@@ -20,9 +20,9 @@
 */
 //#include "../../SDL_internal.h"
 
-#if SDL_THREAD_N3DS
-
 /* An implementation of mutexes using semaphores */
+
+#include "SDL_config.h"
 
 #include "SDL_thread.h"
 #include "SDL_systhread_c.h"
@@ -31,7 +31,7 @@
 struct SDL_mutex
 {
     int recursive;
-    SDL_threadID owner;
+    Uint32 owner;
     SDL_sem *sem;
 };
 
@@ -77,10 +77,11 @@ SDL_mutexP(SDL_mutex * mutex)
 #if SDL_THREADS_DISABLED
     return 0;
 #else
-    SDL_threadID this_thread;
+    Uint32 this_thread;
 
     if (mutex == NULL) {
-        return SDL_SetError("Passed a NULL mutex");
+        SDL_SetError("Passed a NULL mutex");
+        return -1;
     }
 
     this_thread = SDL_ThreadID();
@@ -108,12 +109,14 @@ SDL_mutexV(SDL_mutex * mutex)
     return 0;
 #else
     if (mutex == NULL) {
-        return SDL_SetError("Passed a NULL mutex");
+        SDL_SetError("Passed a NULL mutex");
+        return -1;
     }
 
     /* If we don't own the mutex, we can't unlock it */
     if (SDL_ThreadID() != mutex->owner) {
-        return SDL_SetError("mutex not owned by this thread");
+        SDL_SetError("mutex not owned by this thread");
+        return -1;
     }
 
     if (mutex->recursive) {
@@ -130,7 +133,3 @@ SDL_mutexV(SDL_mutex * mutex)
     return 0;
 #endif /* SDL_THREADS_DISABLED */
 }
-
-#endif /* SDL_THREAD_N3DS */
-
-/* vi: set ts=4 sw=4 expandtab: */

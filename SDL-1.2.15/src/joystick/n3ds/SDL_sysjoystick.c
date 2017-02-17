@@ -10,7 +10,7 @@
 
 #include "../../video/n3ds/SDL_n3dsvideo.h"
 
-int old_button = 0, old_key = 0;
+//int old_button = 0, old_key = 0;
 u32 key_press, key_release = 0;
 
 int SDL_SYS_JoystickInit (void) {
@@ -44,108 +44,108 @@ void SDL_SYS_JoystickUpdate (SDL_Joystick *joystick) {
 	if((key_press & KEY_UP)) {
 		ax = 1, v = -10;
 		SDL_PrivateJoystickAxis (joystick, ax, v);
-		old_key = KEY_UP;
+//		old_key = KEY_UP;
 	}
 	if((key_press & KEY_DOWN)) {
 		ax = 1, v = 10;
 		SDL_PrivateJoystickAxis (joystick, ax, v);
-		old_key = KEY_DOWN;
+//		old_key = KEY_DOWN;
 	}
 	if((key_press & KEY_LEFT)) {
 		ax = 0, h = -10;
 		SDL_PrivateJoystickAxis (joystick, ax, h);
-		old_key = KEY_LEFT;
+//		old_key = KEY_LEFT;
 	}
 	if((key_press & KEY_RIGHT)) {
 		ax = 0, h = 10;
 		SDL_PrivateJoystickAxis (joystick, ax, h);
-		old_key = KEY_RIGHT;
+//		old_key = KEY_RIGHT;
 	}
 	if ((key_press & KEY_A)) {
 		SDL_PrivateJoystickButton (joystick, 0, SDL_PRESSED);
-		old_button = KEY_A;
+//		old_button = KEY_A;
 	}
 	if ((key_press & KEY_B)) {
 		SDL_PrivateJoystickButton (joystick, 1, SDL_PRESSED);
-		old_button = KEY_B;
+//		old_button = KEY_B;
 	}
 	if ((key_press & KEY_X)) {
 		SDL_PrivateJoystickButton (joystick, 2, SDL_PRESSED);
-		old_button = KEY_X;
+//		old_button = KEY_X;
 	}
 	if ((key_press & KEY_Y)) {
 		SDL_PrivateJoystickButton (joystick, 3, SDL_PRESSED);
-		old_button = KEY_Y;
+//		old_button = KEY_Y;
 	}
 	if ((key_press & KEY_SELECT)) {
 		SDL_PrivateJoystickButton (joystick, 6, SDL_PRESSED);
-		old_button = KEY_SELECT;
+//		old_button = KEY_SELECT;
 	}
 	if ((key_press & KEY_START)) {
 		SDL_PrivateJoystickButton (joystick, 7, SDL_PRESSED);
-		old_button = KEY_START;
+//		old_button = KEY_START;
 	}
 	if ((key_press & KEY_L)) {
 		SDL_PrivateJoystickButton (joystick, 4, SDL_PRESSED);
-		old_button = KEY_L;
+//		old_button = KEY_L;
 	}
 	if ((key_press&KEY_R)) {
 		SDL_PrivateJoystickButton(joystick,5,SDL_PRESSED);
-		old_button = KEY_R;
+//		old_button = KEY_R;
 	}
 
 	key_release = hidKeysUp ();
 	if ((key_release & KEY_UP)) {
 		ax = 1, v = 0;
 		SDL_PrivateJoystickAxis (joystick, ax, v);
-		old_key = 0;
+//		old_key = 0;
 	}
 	if ((key_release & KEY_DOWN)) {
 		ax = 1, v = 0;
 		SDL_PrivateJoystickAxis (joystick, ax, v);
-		old_key = 0;
+//		old_key = 0;
 	}
 	if ((key_release & KEY_LEFT)) {
 		ax = 0, h = 0;
 		SDL_PrivateJoystickAxis (joystick, ax, h);
-		old_key = 0;
+//		old_key = 0;
 	}
 	if ((key_release & KEY_RIGHT)) {
 		ax = 0, h = 0;
 		SDL_PrivateJoystickAxis (joystick, ax, h);
-		old_key = 0;
+//		old_key = 0;
 	}
 	if ((key_release & KEY_A)) {
 		SDL_PrivateJoystickButton (joystick, 0, SDL_RELEASED);
-		old_button = 0;
+//		old_button = 0;
 	}
 	if ((key_release & KEY_B)) {
 		SDL_PrivateJoystickButton (joystick, 1, SDL_RELEASED);
-		old_button = 0;
+//		old_button = 0;
 	}
 	if ((key_release & KEY_X)) {
 		SDL_PrivateJoystickButton (joystick, 2, SDL_RELEASED);
-		old_button = 0;
+//		old_button = 0;
 	}
 	if ((key_release & KEY_Y)) {
 		SDL_PrivateJoystickButton (joystick, 3, SDL_RELEASED);
-		old_button = 0;
+//		old_button = 0;
 	}
 	if ((key_release & KEY_SELECT)) {
 		SDL_PrivateJoystickButton (joystick, 6, SDL_RELEASED);
-		old_button = 0;
+//		old_button = 0;
 	}
 	if ((key_release & KEY_START)) {
 		SDL_PrivateJoystickButton (joystick, 7, SDL_RELEASED);
-		old_button = 0;
+//		old_button = 0;
 	}
 	if ((key_release & KEY_L)) {
 		SDL_PrivateJoystickButton (joystick, 4, SDL_RELEASED);
-		old_button = 0;
+//		old_button = 0;
 	}
 	if ((key_release & KEY_R)) {
 		SDL_PrivateJoystickButton (joystick, 5, SDL_RELEASED);
-		old_button = 0;
+//		old_button = 0;
 	}
 }
 

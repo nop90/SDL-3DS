@@ -49,7 +49,9 @@
 #include "SDL_n3dsevents_c.h"
 #include "SDL_n3dsmouse_c.h"
 
-#define N3DSVID_DRIVER_NAME "Nintendo 3DS video driver"
+#define N3DSVID_DRIVER_NAME "n3ds"
+
+static Uint32 n3ds_palette[256] = {0};
 
 /* Low level N3ds */
 
@@ -122,6 +124,8 @@ void drawTexture( int x, int y, int width, int height, float left, float right, 
 static int N3DS_VideoInit(_THIS, SDL_PixelFormat *vformat);
 static SDL_Rect **N3DS_ListModes(_THIS, SDL_PixelFormat *format, Uint32 flags);
 static SDL_Surface *N3DS_SetVideoMode(_THIS, SDL_Surface *current, int width, int height, int bpp, Uint32 flags);
+static int N3DS_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors);
+static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects);
 static void N3DS_VideoQuit(_THIS);
 
 /* Hardware surface functions */
@@ -182,8 +186,8 @@ static SDL_VideoDevice *N3DS_CreateDevice(int devindex)
 	device->ListModes = N3DS_ListModes;
 	device->SetVideoMode = N3DS_SetVideoMode;
 	device->CreateYUVOverlay = NULL;
-	device->SetColors = NULL;
-	device->UpdateRects = NULL;
+	device->SetColors = N3DS_SetColors;
+	device->UpdateRects = N3DS_UpdateRects;
 	device->VideoQuit = N3DS_VideoQuit;
 	device->AllocHWSurface = N3DS_AllocHWSurface;
 	device->CheckHWBlit = NULL;
@@ -289,6 +293,14 @@ int hh= next_pow2(height);
 			this->hidden->mode=GSP_RGB5_A1_OES;
 			this->hidden->byteperpixel=2;
 			break;
+		case 8:
+			Rmask = 0;
+			Gmask = 0;
+			Bmask = 0;
+			Amask = 0;
+			this->hidden->mode=GSP_RGBA8_OES;
+			this->hidden->byteperpixel=4;
+			break;
 		default:
 			return NULL;
 			break;
@@ -298,98 +310,155 @@ int hh= next_pow2(height);
 		linearFree( this->hidden->buffer );
 	}
 
-	this->hidden->buffer = (u8*) linearAlloc(hw * hh * this->hidden->byteperpixel);
-	if ( ! this->hidden->buffer ) {
-		SDL_SetError("Couldn't allocate buffer for requested mode");
-		return(NULL);
-	}
+	if(bpp>8) {
+		this->hidden->buffer = (u8*) linearAlloc(hw * hh * this->hidden->byteperpixel);
+		if ( ! this->hidden->buffer ) {
+			SDL_SetError("Couldn't allocate buffer for requested mode");
+			return(NULL);
+		}
 
 
-	SDL_memset(this->hidden->buffer, 0, hw * hh * this->hidden->byteperpixel);
+		SDL_memset(this->hidden->buffer, 0, hw * hh * this->hidden->byteperpixel);
 
-	/* Allocate the new pixel format for the screen */
-	if ( ! SDL_ReallocFormat(current, bpp, Rmask, Gmask, Bmask, Amask) ) {
-		linearFree(this->hidden->buffer);
-		this->hidden->buffer = NULL;
-		SDL_SetError("Couldn't allocate new pixel format for requested mode");
-		return(NULL);
-	}
+		/* Allocate the new pixel format for the screen */
+		if ( ! SDL_ReallocFormat(current, bpp, Rmask, Gmask, Bmask, Amask) ) {
+			linearFree(this->hidden->buffer);
+			this->hidden->buffer = NULL;
+			SDL_SetError("Couldn't allocate new pixel format for requested mode");
+			return(NULL);
+		}
 
-	//setup the screens mode
-	sceneInit(this->hidden->mode);
-	if((flags & SDL_CONSOLETOP) && !(this->hidden->screens & SDL_TOPSCR)) {
-		consoleInit(GFX_TOP, NULL);
-		this->hidden->console = SDL_CONSOLETOP;
-		flags &= ~SDL_CONSOLEBOTTOM;
-		// todo here: setup bottom video for graphics;
-	} else if((flags & SDL_CONSOLEBOTTOM) && !(this->hidden->screens & SDL_BOTTOMSCR)) {
-		consoleInit(GFX_BOTTOM, NULL);
-		this->hidden->console = SDL_CONSOLEBOTTOM;
-	}
-	printf("SDL 1.2.15 for N3DS - Nop90 port v0.4\n");
- 	printf("Setting mode %d %dx%d\n", this->hidden->mode, width, height); 
+		//setup the screens mode
+		sceneInit(this->hidden->mode);
+		if((flags & SDL_CONSOLETOP) && !(this->hidden->screens & SDL_TOPSCR)) {
+			consoleInit(GFX_TOP, NULL);
+			this->hidden->console = SDL_CONSOLETOP;
+			flags &= ~SDL_CONSOLEBOTTOM;
+			// todo here: setup bottom video for graphics;
+		} else if((flags & SDL_CONSOLEBOTTOM) && !(this->hidden->screens & SDL_BOTTOMSCR)) {
+			consoleInit(GFX_BOTTOM, NULL);
+			this->hidden->console = SDL_CONSOLEBOTTOM;
+		}
 
-	/* Set up the new mode framebuffer */
-	current->flags =  SDL_HWSURFACE | SDL_DOUBLEBUF;//SDL_FULLSCREEN | SDL_SWSURFACE| SDL_DOUBLEBUF;
-	this->hidden->w = hw;
-	this->hidden->h = hh;
+		/* Set up the new mode framebuffer */
+		current->flags =  SDL_HWSURFACE | SDL_DOUBLEBUF;//SDL_FULLSCREEN | SDL_SWSURFACE| SDL_DOUBLEBUF;
+		this->hidden->w = hw;
+		this->hidden->h = hh;
 
-	this->hidden->x1 = 0;
-	this->hidden->y1 = 0;
-	this->hidden->x2 = 0;
-	this->hidden->y2 = 0;
-	if((this->hidden->screens & SDL_TOPSCR) && (this->hidden->screens & SDL_BOTTOMSCR)){
-		this->hidden->w1 = width;
-		this->hidden->h1 = height/2;
-		this->hidden->w2 = width;
-		this->hidden->h2 = height/2;
-		this->hidden->y2 = height/2;
+		this->hidden->x1 = 0;
+		this->hidden->y1 = 0;
+		this->hidden->x2 = 0;
+		this->hidden->y2 = 0;
+		if((this->hidden->screens & SDL_TOPSCR) && (this->hidden->screens & SDL_BOTTOMSCR)){
+			this->hidden->w1 = width;
+			this->hidden->h1 = height/2;
+			this->hidden->w2 = width;
+			this->hidden->h2 = height/2;
+			this->hidden->y2 = height/2;
+		} else {
+			this->hidden->w1 = width;
+			this->hidden->h1 = height;
+			this->hidden->w2 = width;
+			this->hidden->h2 = height;
+		}
+
+		this->hidden->l1 = 0.0f;
+		this->hidden->t1 = 0.0f;
+		this->hidden->r1 = (float)this->hidden->w1/(float)this->hidden->w;
+		this->hidden->b1 = (float)this->hidden->h1/(float)this->hidden->h;
+		this->hidden->l2 = 0.0f;
+		this->hidden->t2 = (float)this->hidden->y2/(float)this->hidden->h;
+		this->hidden->r2 = (float)this->hidden->w2/(float)this->hidden->w;
+		this->hidden->b2 = ((float)this->hidden->y2+(float)this->hidden->h2)/(float)this->hidden->h;
+
+		if((this->hidden->fitscreen & SDL_FITWIDTH)&&(this->hidden->fitscreen & SDL_FITHEIGHT)) {
+			this->hidden->scalex= 400.0/(float)this->hidden->w1;
+			this->hidden->scaley= 240.0/(float)this->hidden->h1;
+		} else if(this->hidden->fitscreen & SDL_FITWIDTH) {
+			this->hidden->scalex= 400.0/(float)this->hidden->w1;
+			this->hidden->scaley= 1.0f;
+		} else 	if(this->hidden->fitscreen & SDL_FITHEIGHT) {
+			this->hidden->scaley= 240.0/(float)this->hidden->h1;
+			this->hidden->scalex= 1.0f;
+		} else {
+			this->hidden->scalex= 1.0f;
+			this->hidden->scaley= 1.0f;
+		}
+		this->hidden->scalex2= (400.00f/320.0f)*this->hidden->scalex;
+		this->hidden->scaley2= this->hidden->scaley;
+
+		current->w = width;
+		current->h = height;
+		current->pitch = hw * this->hidden->byteperpixel;
+		current->pixels = this->hidden->buffer;
+
+	// NOTE: the following is a dirty hack to make work mode 2. Passing a RGB565 buffer to a RGB656 texture and rendering it to a RGB656 display results in some colors being transparent.
+	// To fix this we are transfering a RGB656 buffer to a RGB5A1 texure and then rendering it to a RGB656 display. We lose 1 bit of Green color depth, but at least it works
+		int mode = this->hidden->mode;
+		if (mode==2) mode = 3; 
+
+		// Setup the textures
+		C3D_TexInit(&spritesheet_tex, hw, hh, this->hidden->mode);
+		C3D_TexSetFilter(&spritesheet_tex, GPU_LINEAR, GPU_NEAREST);
+		C3D_TexBind(0, &spritesheet_tex);
 	} else {
-		this->hidden->w1 = width;
-		this->hidden->h1 = height;
-		this->hidden->w2 = width;
-		this->hidden->h2 = height;
+		this->hidden->buffer = linearAlloc((bpp / 8) * width * height);
+		if ( ! this->hidden->buffer ) {
+			SDL_SetError("Couldn't allocate buffer for requested mode");
+			return(NULL);
+		}
+
+		SDL_memset(this->hidden->buffer, 0, (bpp / 8) * width * height);
+
+		//Allocate the new pixel format for the screen
+		if ( ! SDL_ReallocFormat(current, bpp, Rmask, Gmask, Bmask, Amask) ) {
+			SDL_free(this->hidden->buffer);
+			this->hidden->buffer = NULL;
+			SDL_SetError("Couldn't allocate new pixel format for requested mode");
+			return(NULL);
+		}
+
+		//setup the screens mode
+		this->hidden->scr_h = 240;
+		if (this->hidden->screens & SDL_TOPSCR) {
+			gfxInit(this->hidden->mode, GSP_BGR8_OES, false);
+			gfxSetDoubleBuffering(GFX_TOP, false);
+			this->hidden->scr_w = 400;
+			this->hidden->fb = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
+			if (flags & SDL_CONSOLEBOTTOM) {
+				consoleInit(GFX_BOTTOM, NULL);
+				this->hidden->console = SDL_CONSOLEBOTTOM;
+			}
+		} else if(this->hidden->screens & SDL_BOTTOMSCR) {
+			gfxInit(GSP_BGR8_OES, this->hidden->mode, false);
+			gfxSetDoubleBuffering(GFX_BOTTOM, false);
+			this->hidden->scr_w = 320;
+			this->hidden->fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
+			if (flags & SDL_CONSOLETOP) {
+				consoleInit(GFX_TOP, NULL);
+				this->hidden->console = SDL_CONSOLETOP;
+			}
+		}
+		
+		if ( width < (this->hidden->scr_w) || height < (this->hidden->scr_h) ) {
+			int win_x = ((this->hidden->scr_w) - width) / 2;
+			int win_y = ((this->hidden->scr_h) - height) / 2;
+			this->hidden->offset = (win_x * (this->hidden->scr_h) - win_y) * (this->hidden->byteperpixel);
+			this->hidden->win_y = win_y;
+		} else
+			this->hidden->offset = this->hidden->win_y = 0;
+
+		printf("SDL 1.2.15 for N3DS\n");
+		printf("Setting mode %d %dx%d\n", this->hidden->mode, width, height); 
+
+		//Set up the new mode framebuffer
+		current->flags =  SDL_SWSURFACE;
+		this->hidden->w = this->info.current_w = current->w = width;
+		this->hidden->h = this->info.current_h = current->h = height;
+		current->pitch = (bpp / 8) * current->w;
+		current->pixels = this->hidden->buffer;
+	
 	}
-
-	this->hidden->l1 = 0.0f;
-	this->hidden->t1 = 0.0f;
-	this->hidden->r1 = (float)this->hidden->w1/(float)this->hidden->w;
-	this->hidden->b1 = (float)this->hidden->h1/(float)this->hidden->h;
-	this->hidden->l2 = 0.0f;
-	this->hidden->t2 = (float)this->hidden->y2/(float)this->hidden->h;
-	this->hidden->r2 = (float)this->hidden->w2/(float)this->hidden->w;
-	this->hidden->b2 = ((float)this->hidden->y2+(float)this->hidden->h2)/(float)this->hidden->h;
-
-	if((this->hidden->fitscreen & SDL_FITWIDTH)&&(this->hidden->fitscreen & SDL_FITHEIGHT)) {
-		this->hidden->scalex= 400.0/(float)this->hidden->w1;
-		this->hidden->scaley= 240.0/(float)this->hidden->h1;
-	} else if(this->hidden->fitscreen & SDL_FITWIDTH) {
-		this->hidden->scalex= 400.0/(float)this->hidden->w1;
-		this->hidden->scaley= 1.0f;
-	} else 	if(this->hidden->fitscreen & SDL_FITHEIGHT) {
-		this->hidden->scaley= 240.0/(float)this->hidden->h1;
-		this->hidden->scalex= 1.0f;
-	} else {
-		this->hidden->scalex= 1.0f;
-		this->hidden->scaley= 1.0f;
-	}
-	this->hidden->scalex2= (400.00f/320.0f)*this->hidden->scalex;
-	this->hidden->scaley2= this->hidden->scaley;
-
-	current->w = width;
-	current->h = height;
-	current->pitch = hw * this->hidden->byteperpixel;
-	current->pixels = this->hidden->buffer;
-
-// NOTE: the following is a dirty hack to make work mode 2. Passing a RGB565 buffer to a RGB656 texture and rendering it to a RGB656 display results in some colors being transparent.
-// To fix this we are transfering a RGB656 buffer to a RGB5A1 texure and then rendering it to a RGB656 display. We lose 1 bit of Green color depth, but at least it works
-	int mode = this->hidden->mode;
-	if (mode==2) mode = 3; 
-
-	// Setup the textures
-	C3D_TexInit(&spritesheet_tex, hw, hh, this->hidden->mode);
-	C3D_TexSetFilter(&spritesheet_tex, GPU_LINEAR, GPU_NEAREST);
-	C3D_TexBind(0, &spritesheet_tex);
 
 	/* We're done */
 	return(current);
@@ -416,27 +485,79 @@ static void N3DS_UnlockHWSurface(_THIS, SDL_Surface *surface)
 	return;
 }
 
+#define N3DS_CopyLoop(code) for (i = 0; i < rows; i++) { \
+src_addr = src_base_addr + (rect->x + (i + rect->y) * this->hidden->w ) * srcBytePerPixel; \
+dst_addr = dst_base_addr + (this->hidden->scr_h - 1 - (i + rect->y) + rect->x * this->hidden->scr_h) * this->hidden->byteperpixel; \
+for (j = 0; j < cols; j++) { \
+code \
+dst_addr += dst_delta; }}
+static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
+{
+	if( SDL_VideoSurface->format->BitsPerPixel == 8) {
+		int i, j, k;
+		Uint32 dst_delta = this->hidden->scr_h * this->hidden->byteperpixel;
+
+		for ( i = 0; i < numrects; ++i ) {
+			SDL_Rect *rect = &rects[i];
+			Uint8 *src_base_addr, *dst_base_addr;
+			Uint8 *src_addr, *dst_addr;
+			Uint8 srcBytePerPixel;
+			int cols, rows;
+
+			if ( ! rect )
+				continue;
+
+			src_base_addr = this->hidden->buffer;
+			dst_base_addr = this->hidden->fb;
+			dst_base_addr += this->hidden->offset;
+
+			cols = (rect->x + rect->w > this->hidden->w) ? this->hidden->w : rect->w;
+			rows = (rect->y + rect->h > this->hidden->h) ? this->hidden->h : rect->h;
+
+			srcBytePerPixel = (SDL_VideoSurface->format->BitsPerPixel) / 8; //this can be different
+
+			N3DS_CopyLoop(*(Uint32 *)dst_addr = n3ds_palette[*(Uint8 *)src_addr]; src_addr++;)
+		}
+		gfxFlushBuffers();
+		gfxSwapBuffers();
+	} 
+}
+
+#define N3DS_MAP_RGB(r, g, b)	((Uint32)r << 24 | (Uint32)g << 16 | (Uint32)b << 8)
+
+static int N3DS_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors)
+{
+	int i;
+	for ( i = firstcolor; i < firstcolor + ncolors; ++i )
+		n3ds_palette[i] = N3DS_MAP_RGB(colors[i].r, colors[i].g, colors[i].b);
+	return(1);
+}
+
 static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface) {
-	GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
+	if( SDL_VideoSurface->format->BitsPerPixel == 8) {
+		;
+	} else {
+		GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
 
-	C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 
-	C3D_TexBind(0, &spritesheet_tex);
-	C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
-	// Convert image to 3DS tiled texture format
-	C3D_SafeDisplayTransfer ((u32*)this->hidden->buffer, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), (u32*)spritesheet_tex.data, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), textureTranferFlags[this->hidden->mode]);
-	gspWaitForPPF();
-	if (this->hidden->screens & SDL_TOPSCR) {
-		C3D_FrameDrawOn(VideoSurface1);
-		drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
+		C3D_TexBind(0, &spritesheet_tex);
+		C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
+		// Convert image to 3DS tiled texture format
+		C3D_SafeDisplayTransfer ((u32*)this->hidden->buffer, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), (u32*)spritesheet_tex.data, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), textureTranferFlags[this->hidden->mode]);
+		gspWaitForPPF();
+		if (this->hidden->screens & SDL_TOPSCR) {
+			C3D_FrameDrawOn(VideoSurface1);
+			drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
+		}
+		if (this->hidden->screens & SDL_BOTTOMSCR) {
+			C3D_FrameDrawOn(VideoSurface2);
+			drawTexture((400-this->hidden->w2*this->hidden->scalex2)/2,(240-this->hidden->h2*this->hidden->scaley2)/2, this->hidden->w2*this->hidden->scalex2, this->hidden->h2*this->hidden->scaley2, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
+		}
 	}
-	if (this->hidden->screens & SDL_BOTTOMSCR) {
-		C3D_FrameDrawOn(VideoSurface2);
-		drawTexture((400-this->hidden->w2*this->hidden->scalex2)/2,(240-this->hidden->h2*this->hidden->scaley2)/2, this->hidden->w2*this->hidden->scalex2, this->hidden->h2*this->hidden->scaley2, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
-	}
 
-	C3D_FrameEnd(0);
-	// todo: we should flip databuffers here
+		C3D_FrameEnd(0);
+
 	return (0);
 }
 

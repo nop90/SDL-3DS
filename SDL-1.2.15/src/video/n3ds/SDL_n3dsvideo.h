@@ -36,13 +36,23 @@
 /* Private display data */
 
 struct SDL_PrivateVideoData {
-    int w, h; // width and height of the video buffer
+//GPU drawing specific
 	int x1,y1,w1,h1; // drawing window for top screen          width and height of top screen part of the video buffer 
 	int x2,y2,w2,h2; //drawing window for bottom screen  and height of bottom part of the video buffer
 	float l1,r1,t1,b1; // GPU source window for the top part of the video buffer
 	float l2,r2,t2,b2; // GPU source window for the bottom part of the video buffer
 	float scalex,scaley; // scaling factors
 	float scalex2,scaley2; // scaling factors
+
+//Peletted raw copy specific
+	int offset;
+	int win_y;
+	int scr_w;
+	int scr_h;
+	Uint8 *fb;
+
+// general data
+    int w, h; // width and height of the video buffer
     void *buffer;
 	GSPGPU_FramebufferFormats mode;
 	unsigned int screens; // SDL_TOPSCR, SDL_BOTTOMSCR, SDL_DUALSCR

@@ -20,12 +20,10 @@
 */
 //#include "../../SDL_internal.h"
 
-#if SDL_THREAD_N3DS
-
-/* Semaphore functions for the 3DS. */
-
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "SDL_config.h"
 
 #include "SDL_error.h"
 #include "SDL_thread.h"
@@ -77,39 +75,16 @@ void SDL_DestroySemaphore(SDL_sem *sem)
  * is specified, convert it to microseconds. */
 int SDL_SemWaitTimeout(SDL_sem *sem, Uint32 timeout)
 {
-    Uint32 *pTimeout;
-       unsigned int res;
+    unsigned int res;
 
     if (sem == NULL) {
         SDL_SetError("Passed a NULL sem");
         return 0;
     }
 
-    if (timeout == 0) {
-        res = 0;//sceKernelPollSema(sem->semid, 1); 3DS STUB
-        if (res < 0) {
-            return SDL_MUTEX_TIMEDOUT;
-        }
-        return 0;
-    }
+    res = svcWaitSynchronization(sem->semid, (timeout == SDL_MUTEX_MAXWAIT) ? U64_MAX : (signed long long)timeout*1000000);
 
-    if (timeout == SDL_MUTEX_MAXWAIT) {
-        pTimeout = NULL;
-    } else {
-        timeout *= 1000;  /* Convert to microseconds. */
-        pTimeout = &timeout;
-    }
-
-    /*res = sceKernelWaitSema(sem->semid, 1, pTimeout); 3DS STUB
-       switch (res) {
-               case SCE_KERNEL_ERROR_OK:
-                       return 0;
-               case SCE_KERNEL_ERROR_WAIT_TIMEOUT:
-                       return SDL_MUTEX_TIMEDOUT;
-               default:
-                       return SDL_SetError("WaitForSingleObject() failed");
-    }*/
-    return 0;
+    return (res == 0) ? 0 : SDL_MUTEX_TIMEDOUT;
 }
 
 int SDL_SemTryWait(SDL_sem *sem)
@@ -125,37 +100,33 @@ int SDL_SemWait(SDL_sem *sem)
 /* Returns the current count of the semaphore */
 Uint32 SDL_SemValue(SDL_sem *sem)
 {
-    //SceKernelSemaInfo info; 3DS STUB
+    Sint32 value;
 
     if (sem == NULL) {
         SDL_SetError("Passed a NULL sem");
         return 0;
     }
 
-    /*if (sceKernelReferSemaStatus(sem->semid, &info) >= 0) { 3DS STUB
-        return info.currentCount;
-    }*/
+    svcReleaseSemaphore(&value, sem->semid, 0);
 
-    return 0;
+    return (Uint32)value;
 }
 
 int SDL_SemPost(SDL_sem *sem)
 {
     int res;
+    Sint32 count;
 
     if (sem == NULL) {
-        return SDL_SetError("Passed a NULL sem");
+        SDL_SetError("Passed a NULL sem");
+        return -1;                
     }
 
-    res = svcReleaseSemaphore(NULL, sem->semid, 1);
+    res = svcReleaseSemaphore(&count, sem->semid, 1);
     if (res < 0) {
-        return SDL_SetError("svcReleaseSemaphore() failed");
+        SDL_SetError("svcReleaseSemaphore() failed");
+        return -1;
     }
 
     return 0;
 }
-
-#endif /* SDL_THREAD_N3DS */
-
-/* vim: ts=4 sw=4
- */

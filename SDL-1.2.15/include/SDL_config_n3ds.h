@@ -88,25 +88,26 @@
 #define HAVE_SETJMP 1
 
 /* Enable various audio drivers */
-//#define SDL_AUDIO_DRIVER_N3DS	1
-#define SDL_AUDIO_DRIVER_DUMMY	1
+#define SDL_AUDIO_DRIVER_N3DS	1
+//#define SDL_AUDIO_DRIVER_DUMMY	1
 
 /* Enable the stub cdrom driver (src/cdrom/dummy/\*.c) */
 #define SDL_CDROM_DISABLED	1
 
 /* Enable the stub joystick driver (src/joystick/dummy/\*.c) */
-#define SDL_JOYSTICK_DISABLED	1
+//#define SDL_JOYSTICK_DISABLED	1
 
 /* Enable various input drivers */
-//#define SDL_JOYSTICK_N3DS	1
+#define SDL_JOYSTICK_N3DS	1
 
 /* Enable the stub shared object loader (src/loadso/dummy/\*.c) */
 #define SDL_LOADSO_DISABLED	1
 
 /* Enable the stub thread support (src/thread/generic/\*.c) */
-#define SDL_THREADS_DISABLED	1
+//#define SDL_THREADS_DISABLED	1
+
 /* Enable thread support */
-//#define SDL_THREAD_N3DS	1
+#define SDL_THREAD_N3DS	1
 
 /* Enable various timer systems */
 #define SDL_TIMER_N3DS	1

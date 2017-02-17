@@ -18,15 +18,12 @@
 	  misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-//#include "../../SDL_internal.h"
-
-#if SDL_THREAD_N3DS
-
-/* 3DS thread management routines for SDL */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
+
+#include "SDL_config.h"
 
 #include "SDL_error.h"
 #include "SDL_thread.h"
@@ -38,73 +35,52 @@
 #define STACKSIZE       (4 * 1024)
 #define APPCORE_CPUID   0
 
-static void ThreadEntry(void *arg)
+void ThreadEntry(void *arg)
 {
-	SDL_RunThread(*(void **) arg);
-	svcExitThread();
+	SDL_RunThread(arg);
+	//svcExitThread();
 }
 
 int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 {
-	s32 priority = 0x30;
+	s32 priority = 0x2F;
 
 	/* Set priority of new thread to the same as the current thread */
 	//svcGetThreadPriority(&priority, CURRENT_KTHREAD);
-
-	thread->handle.threadStack = memalign(32, STACKSIZE);
-
-	Result res;
-	res = svcCreateThread(&thread->handle.threadHandle,
-		ThreadEntry, 0, &thread->handle.threadStack[STACKSIZE/4],
-		priority, APPCORE_CPUID);
-
-	if (res < 0) {
-		return SDL_SetError("svcCreateThread() failed");
-	}
+	thread->handle = threadCreate(ThreadEntry, args,
+		STACKSIZE, priority, -2, false);
+	/*if (thread->handle == NULL) {
+		SDL_SetError("Thread creation failed");
+		return -1;
+	}*/
 
 	return 0;
 }
 
-void SDL_SYS_SetupThread(const char *name)
+void SDL_SYS_SetupThread(void)
 {
-	 /* Do nothing. */
+	 //Nothing, probably
 }
 
-SDL_threadID SDL_ThreadID(void)
+Uint32 SDL_ThreadID(void)
 {
-	// return (SDL_threadID) sceKernelGetThreadId();
-	return (SDL_threadID)0;
+	//Incompatible with SDL API, this function will NOT return
+	//a valid thread ID when called from the main thread.
+	Thread current = threadGetCurrent();
+	Handle handle = threadGetHandle(current);
+	u32 threadID;
+	svcGetThreadId(&threadID, handle);
+
+	return threadID;
 }
 
 void SDL_SYS_WaitThread(SDL_Thread *thread)
 {
-	svcWaitSynchronization(thread->handle.threadHandle, U64_MAX);
+	threadJoin(thread->handle, U64_MAX);
 }
 
-void SDL_SYS_DetachThread(SDL_Thread *thread)
+void SDL_SYS_KillThread(SDL_Thread *thread)
 {
-	 /* !!! FIXME: is this correct? */
-	svcCloseHandle(thread->handle.threadHandle);
-	free(thread->handle.threadStack);
+	threadFree(thread->handle);
 }
 
-int SDL_SYS_SetThreadPriority(SDL_ThreadPriority priority)
-{
-	/*s32 value;
-
-	if (priority == SDL_THREAD_PRIORITY_LOW) {
-		value = 0x5;
-	} else if (priority == SDL_THREAD_PRIORITY_HIGH) {
-		value = 0x3F;
-	} else {
-		value = 0x20;
-	}*/
-
-	//return sceKernelChangeThreadPriority(sceKernelGetThreadId(),value);
-	return 0;
-}
-
-#endif /* SDL_THREAD_N3DS */
-
-/* vim: ts=4 sw=4
- */

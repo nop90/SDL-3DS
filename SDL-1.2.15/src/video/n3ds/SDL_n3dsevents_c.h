@@ -23,7 +23,7 @@
 
 #include "SDL_n3dsvideo.h"
 
-#define N3DS_NUMKEYS 12
+#define N3DS_NUMKEYS 32
 /* Variables and functions exported by SDL_sysevents.c to other parts 
    of the native video subsystem (SDL_sysvideo.c)
 */
