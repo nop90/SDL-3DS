@@ -18,12 +18,13 @@ TOC
 
 VIDEO
 ============
+the video device will be rendered centered on the HW screen (default screen is the TOP one) 
 
-8 bpp format draws only on top screeen in raw mode (no zooming and no custom options)
+8 bpp format draws only on top screeen in raw mode (no zooming and no custom options). There is no clipping so don't use a screen wider of the phisical screen.
 
 Four HW acelerate bpp modes supported : 32 (RGBA8), 24 (RGB8), 16 (RGB565), 15 (RGB555_A1)
 
-With these video size, the video device will be rendered centered on the HW screen (default screen is the TOP one) and can be used the following options:
+With these video sizes can be used the following options:
 
 - SDL_FULLSCREEN option stretchs the video device on the HW screen.
 - SDL_TOPSCR: select the top screen for rendering the video device (it's the default option, so you don't really need to set this flag)
