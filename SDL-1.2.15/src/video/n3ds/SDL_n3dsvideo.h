@@ -59,6 +59,7 @@ struct SDL_PrivateVideoData {
 	unsigned int console; // SDL_CONSOLETOP, SDL_CONSOLEBOTTOM
 	unsigned int fitscreen; // SDL_TRIMBOTTOMSCR, SDL_FITWIDTH, SDL_FITHEIGHT (SDL_FULLSCREEN sets both SDL_FITWIDTH and SDL_FITHEIGHT)
 	int byteperpixel;
+	int bpp;
 	
 };
 

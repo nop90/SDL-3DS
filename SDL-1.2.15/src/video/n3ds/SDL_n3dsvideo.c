@@ -253,10 +253,6 @@ int hh= next_pow2(height);
 	flags &= ~SDL_DUALSCR;
 	flags |= this->hidden->screens;
 	
-	if(flags & SDL_FULLSCREEN) 
-		flags |= (SDL_FITWIDTH | SDL_FITHEIGHT);
-	this->hidden->fitscreen = flags & (SDL_FITWIDTH | SDL_FITHEIGHT);
-
 	switch(bpp) {
 		case 0:
 			bpp = 32;
@@ -267,6 +263,7 @@ int hh= next_pow2(height);
 			Amask = 0x000000ff;
 			this->hidden->mode=GSP_RGBA8_OES;
 			this->hidden->byteperpixel=4;
+			this->hidden->bpp = 32;
 			break;
 		case 24:
 			Rmask = 0xff0000; 
@@ -275,6 +272,7 @@ int hh= next_pow2(height);
 			Amask = 0x0;
 			this->hidden->mode=GSP_BGR8_OES;
 			this->hidden->byteperpixel=3;
+			this->hidden->bpp = 24;
 			break;
 		case 16:
 			Rmask = 0xF800;
@@ -283,6 +281,7 @@ int hh= next_pow2(height);
             Amask = 0x0000;
 			this->hidden->mode=GSP_RGB565_OES;
 			this->hidden->byteperpixel=2;
+			this->hidden->bpp = 16;
 			break;
 		case 15:
 			bpp = 16;
@@ -292,6 +291,7 @@ int hh= next_pow2(height);
 			Amask = 0x0001;
 			this->hidden->mode=GSP_RGB5_A1_OES;
 			this->hidden->byteperpixel=2;
+			this->hidden->bpp = 16;
 			break;
 		case 8:
 			Rmask = 0;
@@ -300,6 +300,7 @@ int hh= next_pow2(height);
 			Amask = 0;
 			this->hidden->mode=GSP_RGBA8_OES;
 			this->hidden->byteperpixel=4;
+			this->hidden->bpp = 8;
 			break;
 		default:
 			return NULL;
@@ -311,12 +312,18 @@ int hh= next_pow2(height);
 	}
 
 	if(bpp>8) {
+		if(flags & SDL_FULLSCREEN) 
+			flags |= (SDL_FITWIDTH | SDL_FITHEIGHT);
+		this->hidden->fitscreen = flags & (SDL_FITWIDTH | SDL_FITHEIGHT);
+
+		gfxSetDoubleBuffering(GFX_TOP, true);
+		gfxSetDoubleBuffering(GFX_BOTTOM, true);
+
 		this->hidden->buffer = (u8*) linearAlloc(hw * hh * this->hidden->byteperpixel);
 		if ( ! this->hidden->buffer ) {
 			SDL_SetError("Couldn't allocate buffer for requested mode");
 			return(NULL);
 		}
-
 
 		SDL_memset(this->hidden->buffer, 0, hw * hh * this->hidden->byteperpixel);
 
@@ -421,7 +428,8 @@ int hh= next_pow2(height);
 		//setup the screens mode
 		this->hidden->scr_h = 240;
 		if (this->hidden->screens & SDL_TOPSCR) {
-			gfxInit(this->hidden->mode, GSP_BGR8_OES, false);
+//			gfxInit(this->hidden->mode, GSP_BGR8_OES, false);
+			gfxSetScreenFormat(GFX_TOP, this->hidden->mode);
 			gfxSetDoubleBuffering(GFX_TOP, false);
 			this->hidden->scr_w = 400;
 			this->hidden->fb = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
@@ -430,7 +438,8 @@ int hh= next_pow2(height);
 				this->hidden->console = SDL_CONSOLEBOTTOM;
 			}
 		} else if(this->hidden->screens & SDL_BOTTOMSCR) {
-			gfxInit(GSP_BGR8_OES, this->hidden->mode, false);
+//			gfxInit(GSP_BGR8_OES, this->hidden->mode, false);
+			gfxSetScreenFormat(GFX_BOTTOM, this->hidden->mode);
 			gfxSetDoubleBuffering(GFX_BOTTOM, false);
 			this->hidden->scr_w = 320;
 			this->hidden->fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
@@ -447,9 +456,6 @@ int hh= next_pow2(height);
 			this->hidden->win_y = win_y;
 		} else
 			this->hidden->offset = this->hidden->win_y = 0;
-
-		printf("SDL 1.2.15 for N3DS\n");
-		printf("Setting mode %d %dx%d\n", this->hidden->mode, width, height); 
 
 		//Set up the new mode framebuffer
 		current->flags =  SDL_SWSURFACE;
@@ -493,7 +499,7 @@ code \
 dst_addr += dst_delta; }}
 static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 {
-	if( SDL_VideoSurface->format->BitsPerPixel == 8) {
+	if( this->hidden->bpp == 8) {
 		int i, j, k;
 		Uint32 dst_delta = this->hidden->scr_h * this->hidden->byteperpixel;
 
@@ -514,7 +520,7 @@ static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 			cols = (rect->x + rect->w > this->hidden->w) ? this->hidden->w : rect->w;
 			rows = (rect->y + rect->h > this->hidden->h) ? this->hidden->h : rect->h;
 
-			srcBytePerPixel = (SDL_VideoSurface->format->BitsPerPixel) / 8; //this can be different
+			srcBytePerPixel = (this->hidden->bpp) / 8; //this can be different
 
 			N3DS_CopyLoop(*(Uint32 *)dst_addr = n3ds_palette[*(Uint8 *)src_addr]; src_addr++;)
 		}
@@ -534,7 +540,7 @@ static int N3DS_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors)
 }
 
 static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface) {
-	if( SDL_VideoSurface->format->BitsPerPixel == 8) {
+	if( this->hidden->bpp == 8) {
 		;
 	} else {
 		GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
@@ -571,8 +577,8 @@ void N3DS_VideoQuit(_THIS)
 		linearFree(this->screen->pixels);
 		this->screen->pixels = NULL;
 	}
-	sceneExit();
-	C3D_Fini();
+//	sceneExit();
+//	C3D_Fini();
 	gfxExit();
 }
 
