@@ -20,7 +20,14 @@ VIDEO
 ============
 the video device will be rendered centered on the HW screen (default screen is the TOP one) 
 
-8 bpp format draws only on top screeen in raw mode (no zooming and no custom options). There is no clipping so don't use a screen wider of the phisical screen.
+8 bpp format draws has no zooming and here is no clipping so don't use a screen wider of the phisical screen.
+
+With these video sizes can be used the following options:
+
+- SDL_TOPSCR: select the top screen for rendering the video device (it's the default option, so you don't really need to set this flag)
+- SDL_BOTTOMSCR: select the bottom screen for rendering the video device
+- SDL_CONSOLETOP: enables console output on the top screen (only if SDL_TOPSCR or SDL_FULLSCREEN are not set)  
+- SDL_CONSOLEBOTTOM: enables console output on the bottom screen (only if SDL_BOTTOMSCR or SDL_FULLSCREEN are not set)
 
 Four HW acelerate bpp modes supported : 32 (RGBA8), 24 (RGB8), 16 (RGB565), 15 (RGB555_A1)
 
