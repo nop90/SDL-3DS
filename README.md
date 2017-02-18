@@ -18,18 +18,19 @@ TOC
 
 VIDEO
 ============
-Any video size supported, the video device will be rendered centered on the HW screen. The default HW screen is the TOP screen
 
-Four bpp values supported : 32 (RGBA8), 24 (RGB8), 16 (RGB565), 15 (RGB555_A1)
+8 bpp format draws only on top screeen in raw mode (no zooming and no custom options)
 
-The SDL_FULLSCREEN option stretchs the video device on the HW screen.
+Four HW acelerate bpp modes supported : 32 (RGBA8), 24 (RGB8), 16 (RGB565), 15 (RGB555_A1)
 
-The following custom option for the video device are defines:
+With these video size, the video device will be rendered centered on the HW screen (default screen is the TOP one) and can be used the following options:
+
+- SDL_FULLSCREEN option stretchs the video device on the HW screen.
 - SDL_TOPSCR: select the top screen for rendering the video device (it's the default option, so you don't really need to set this flag)
 - SDL_BOTTOMSCR: select the bottom screen for rendering the video device
 - SDL_DUALSCR: draws the upper half of the video device on the top screeen and the lower half on the bottom screen
 - SDL_FITWIDTH: resizes the video device to fit the selected screen width (if SDL_DUALSCR is set, its' resized to 400 pixel width)
-- SDL_FITHEIGHT: resizes the video device to fit the screen/screens width
+- SDL_FITHEIGHT: resizes the video device to fit the screen/screens height
 - SDL_CONSOLETOP: enables console output on the top screen (only if SDL_TOPSCR or SDL_FULLSCREEN are not set)  
 - SDL_CONSOLEBOTTOM: enables console output on the bottom screen (only if SDL_BOTTOMSCR or SDL_FULLSCREEN are not set)
 
@@ -56,7 +57,7 @@ a custom function is defined to bind one or more N3DS keys to a SDL key value:
 
  void SDL_N3DSKeyBind(unsigned int hidkey, SDLKey key)
 
-NOTE: circle pad and C-Stick are not mapped to the direction key by default( circle pad is mapped to the default Joystick) but if someone wants to make this mapping can use the following code:
+NOTE: circle pad and C-Stick are not mapped to the direction key by default( circle pad is mapped to the default Joystick) but if someone wants to make this mapping he can use the following code:
 	
 	SDL_N3DSKeyBind(KEY_CPAD_UP|KEY_CSTICK_UP, SDLK_UP);
 	SDL_N3DSKeyBind(KEY_CPAD_DOWN|KEY_CSTICK_DOWN, SDLK_DOWN);
@@ -68,7 +69,7 @@ It's not possible to bind a N3DS key to two or more SDL Key values.
 JOYSTICK
 ============
 
-Joystick support is enabled but needs testin (and probably fixing)
+Joystick support is enabled
 
 
 MOUSEPOINTER
@@ -80,10 +81,17 @@ Mouse pointer is controlled with the touchpad. Touching the bottom screen contro
 AUDIO
 ============
 
-Audio is disabled and Init Audio will stop the program with an assertion failed error
+Audio is working. Audio thread would have a higher priority than the main thread, but it would give main thread a fixed time to process the audio. If you are experiencing problems with the audio, try using a larger sample buffer or change the delay time in SDL_n3dsaudio.c
 
+MULTITHREAD
+============
 
- 
+Multithread is supported. But please bear in mind that due to the design of 3DS' OS, thread won't evenly share CPU time. You would have to use SDL_Delay to give other threads CPU time to run. All threads would be created with a higher priority than the main thread, and they would start running as soon as you create them.
+
+TIMER
+============
+
+Working in progress.
 
 ---
 http://www.libsdl.org/
