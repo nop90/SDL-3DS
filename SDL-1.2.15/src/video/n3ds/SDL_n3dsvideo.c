@@ -541,7 +541,33 @@ static int N3DS_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors)
 
 static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface) {
 	if( this->hidden->bpp == 8) {
-		;
+		int i, j, k;
+		Uint32 dst_delta = this->hidden->scr_h * this->hidden->byteperpixel;
+
+		SDL_Rect myrect, *rect;
+		myrect.x=0;
+		myrect.y=0;
+		myrect.w = this->hidden->w;
+		myrect.h = this->hidden->h;
+		rect= &myrect;
+		Uint8 *src_base_addr, *dst_base_addr;
+		Uint8 *src_addr, *dst_addr;
+		Uint8 srcBytePerPixel;
+		int cols, rows;
+
+		src_base_addr = this->hidden->buffer;
+		dst_base_addr = this->hidden->fb;
+		dst_base_addr += this->hidden->offset;
+
+		cols = (rect->x + rect->w > this->hidden->w) ? this->hidden->w : rect->w;
+		rows = (rect->y + rect->h > this->hidden->h) ? this->hidden->h : rect->h;
+
+		srcBytePerPixel = 1;
+
+		N3DS_CopyLoop(*(Uint32 *)dst_addr = n3ds_palette[*(Uint8 *)src_addr]; src_addr++;)
+
+		gfxFlushBuffers();
+		gfxSwapBuffers();
 	} else {
 		GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
 
@@ -577,8 +603,8 @@ void N3DS_VideoQuit(_THIS)
 		linearFree(this->screen->pixels);
 		this->screen->pixels = NULL;
 	}
-//	sceneExit();
-//	C3D_Fini();
+	sceneExit();
+	C3D_Fini();
 	gfxExit();
 }
 
@@ -646,8 +672,8 @@ static void sceneInit(GSPGPU_FramebufferFormats mode) {
 static void sceneExit(void) {
 //---------------------------------------------------------------------------------
 
-	C3D_RenderTargetDelete(VideoSurface1);
-	C3D_RenderTargetDelete(VideoSurface2);
+	if(VideoSurface1) C3D_RenderTargetDelete(VideoSurface1);
+	if (VideoSurface2) C3D_RenderTargetDelete(VideoSurface2);
 	// Free the shader program
 	shaderProgramFree(&program);
 	DVLB_Free(vshader_dvlb);
