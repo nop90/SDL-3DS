@@ -10,6 +10,8 @@ SDL 1.2 for 3DS
 
 TOC
 ============
+
+- Credits
 - Video
 - Key input
 - Joystick
@@ -18,18 +20,16 @@ TOC
 
 VIDEO
 ============
+
+This port of the SDL 1.2 lib to 3ds was made with the help of several coders of the 3ds scene: Xerpi, Rikku2000, Nop90, Wenting
+
+
+VIDEO
+============
+
 the video device will be rendered centered on the HW screen (default screen is the TOP one) 
 
-8 bpp format draws has no zooming and here is no clipping so don't use a screen wider of the phisical screen.
-
-With these video sizes can be used the following options:
-
-- SDL_TOPSCR: select the top screen for rendering the video device (it's the default option, so you don't really need to set this flag)
-- SDL_BOTTOMSCR: select the bottom screen for rendering the video device
-- SDL_CONSOLETOP: enables console output on the top screen (only if SDL_TOPSCR or SDL_FULLSCREEN are not set)  
-- SDL_CONSOLEBOTTOM: enables console output on the bottom screen (only if SDL_BOTTOMSCR or SDL_FULLSCREEN are not set)
-
-Four HW acelerate bpp modes supported : 32 (RGBA8), 24 (RGB8), 16 (RGB565), 15 (RGB555_A1)
+five bpp modes supported : 32 (RGBA8), 24 (RGB8), 16 (RGB565), 15 (RGB555_A1), 8 (paletted) 
 
 With these video sizes can be used the following options:
 
@@ -46,22 +46,23 @@ Note: using the SDL_FULLSCREEN flag is the same of using (SDL_TOPSCR | SDL_BOTTO
 
 KEY INPUT
 ============
-default key bindings are:
 
- KEY_A -> SDLK_a
- KEY_B -> SDLK_b
- KEY_X -> SDLK_x
- KEY_Y -> SDLK-y
- KEY_L -> SDLK_l
- KEY_R -> SDLK_r
- KEY_START -> SDLK_RETURN
- KEY_SELECT -> SDLK_ESCAPE  
- KEY_RIGHT -> SDLK_RIGHT
- KEY_LEFT -> SDLK_LEFT
- SDLK_UP -> KEY_UP
- KEY_DOWN -> SDLK_DOWN
+Default key bindings are:
+
+	KEY_A -> SDLK_a
+	KEY_B -> SDLK_b
+	KEY_X -> SDLK_x
+	KEY_Y -> SDLK-y
+	KEY_L -> SDLK_l
+	KEY_R -> SDLK_r
+	KEY_START -> SDLK_RETURN
+	KEY_SELECT -> SDLK_ESCAPE
+	KEY_RIGHT -> SDLK_RIGHT
+	KEY_LEFT -> SDLK_LEFT
+	SDLK_UP -> KEY_UP
+	KEY_DOWN -> SDLK_DOWN
  
-a custom function is defined to bind one or more N3DS keys to a SDL key value:
+there is a custom function to bind one or more N3DS keys to a SDL key value:
 
  void SDL_N3DSKeyBind(unsigned int hidkey, SDLKey key)
 
@@ -89,7 +90,8 @@ Mouse pointer is controlled with the touchpad. Touching the bottom screen contro
 AUDIO
 ============
 
-Audio is working. Audio thread would have a higher priority than the main thread, but it would give main thread a fixed time to process the audio. If you are experiencing problems with the audio, try using a larger sample buffer or change the delay time in SDL_n3dsaudio.c
+Audio uses the DSP, so to use it with a homebrew compiled as a CIA you need to dump the DSp Firm in the 3ds folder. 
+Audio thread would have a higher priority than the main thread, but it would give main thread a fixed time to process the audio. If you are experiencing problems with the audio, try using a larger sample buffer or change the delay time in SDL_n3dsaudio.c
 
 MULTITHREAD
 ============

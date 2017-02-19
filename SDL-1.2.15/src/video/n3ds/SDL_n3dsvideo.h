@@ -44,16 +44,10 @@ struct SDL_PrivateVideoData {
 	float scalex,scaley; // scaling factors
 	float scalex2,scaley2; // scaling factors
 
-//Peletted raw copy specific
-	int offset;
-	int win_y;
-	int scr_w;
-	int scr_h;
-	Uint8 *fb;
-
-// general data
+// framebuffer data
     int w, h; // width and height of the video buffer
     void *buffer;
+	Uint8 *palettedbuffer;
 	GSPGPU_FramebufferFormats mode;
 	unsigned int screens; // SDL_TOPSCR, SDL_BOTTOMSCR, SDL_DUALSCR
 	unsigned int console; // SDL_CONSOLETOP, SDL_CONSOLEBOTTOM
