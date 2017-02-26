@@ -13,12 +13,13 @@ TOC
 
 - Credits
 - Video
+- Events
 - Key input
 - Joystick
 - Mousepointer
 - Audio
 
-VIDEO
+CREDITS
 ============
 
 This port of the SDL 1.2 lib to 3ds was made with the help of several coders of the 3ds scene: Xerpi, Rikku2000, Nop90, Wenting
