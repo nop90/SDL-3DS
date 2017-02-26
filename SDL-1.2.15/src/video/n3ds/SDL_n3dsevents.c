@@ -33,11 +33,68 @@
 #include "SDL_n3dsvideo.h"
 #include "SDL_n3dsevents_c.h"
 
+static bool task_quit;
+static Handle task_pause_event;
+static Handle task_suspend_event;
+static aptHookCookie cookie;
+
+static void task_apt_hook(APT_HookType hook, void* param) {
+    switch(hook) {
+        case APTHOOK_ONSUSPEND:
+            svcClearEvent(task_suspend_event);
+            break;
+        case APTHOOK_ONSLEEP:
+            svcClearEvent(task_pause_event);
+            break;
+        default:
+            break;
+    }
+}
+
+void task_init() {
+    task_quit = false;
+
+    svcCreateEvent(&task_pause_event, RESET_STICKY);
+
+    svcCreateEvent(&task_suspend_event, RESET_STICKY);
+
+    svcSignalEvent(task_pause_event);
+    svcSignalEvent(task_suspend_event);
+
+    aptHook(&cookie, task_apt_hook, NULL);
+}
+
+void task_exit() {
+    task_quit = true;
+
+    aptUnhook(&cookie);
+
+    if(task_pause_event != 0) {
+        svcCloseHandle(task_pause_event);
+        task_pause_event = 0;
+    }
+
+    if(task_suspend_event != 0) {
+        svcCloseHandle(task_suspend_event);
+        task_suspend_event = 0;
+    }
+}
+
 static SDLKey keymap[N3DS_NUMKEYS];
 char keymem[N3DS_NUMKEYS];
 
 void N3DS_PumpEvents(_THIS)
 {
+	
+	if(!aptMainLoop())
+	{
+		SDL_Event sdlevent;
+		sdlevent.type = SDL_QUIT;
+		SDL_PushEvent(&sdlevent);
+		this->hidden->exiting = 1;
+	}
+	svcSleepThread(1000000); //1ms;
+	
 	hidScanInput();
 
 	int i;
@@ -89,12 +146,12 @@ void N3DS_InitOSKeymap(_THIS)
 	keymap[7]=SDLK_DOWN; //KEY_DOWN
 	keymap[8]=SDLK_r; //KEY_R
 	keymap[9]=SDLK_l; //KEY_L
-	keymap[10]=SDLK_UNKNOWN; 
-	keymap[11]=SDLK_UNKNOWN; 
+	keymap[10]=SDLK_x; //KEY_X 
+	keymap[11]=SDLK_y; //KEY_Y 
 	keymap[12]=SDLK_UNKNOWN; 
 	keymap[13]=SDLK_UNKNOWN; 
-	keymap[14]=SDLK_UNKNOWN; 
-	keymap[15]=SDLK_UNKNOWN; 
+	keymap[14]=SDLK_LSHIFT;  //KEY_ZL 
+	keymap[15]=SDLK_RSHIFT;  //KEY_ZR
 	keymap[16]=SDLK_UNKNOWN; 
 	keymap[17]=SDLK_UNKNOWN; 
 	keymap[18]=SDLK_UNKNOWN; 

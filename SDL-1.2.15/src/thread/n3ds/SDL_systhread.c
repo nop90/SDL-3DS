@@ -38,21 +38,19 @@
 void ThreadEntry(void *arg)
 {
 	SDL_RunThread(arg);
-	//svcExitThread();
 }
 
 int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 {
-	s32 priority = 0x2F;
+//	s32 priority = 0x2F;
+	s32 priority = 0x30;
 
 	/* Set priority of new thread to the same as the current thread */
-	//svcGetThreadPriority(&priority, CURRENT_KTHREAD);
+	svcGetThreadPriority(&priority, CURRENT_KTHREAD);
+	if(priority>0x18) priority--;
+
 	thread->handle = threadCreate(ThreadEntry, args,
 		STACKSIZE, priority, -2, false);
-	/*if (thread->handle == NULL) {
-		SDL_SetError("Thread creation failed");
-		return -1;
-	}*/
 
 	return 0;
 }

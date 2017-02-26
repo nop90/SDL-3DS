@@ -30,5 +30,8 @@
 extern void N3DS_InitOSKeymap(_THIS);
 extern void N3DS_PumpEvents(_THIS);
 
+void task_init();
+void task_exit();
+
 /* end of SDL_nullevents_c.h ... */
 

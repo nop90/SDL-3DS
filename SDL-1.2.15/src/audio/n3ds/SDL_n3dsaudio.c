@@ -106,11 +106,6 @@ AudioBootStrap N3DSAUD_bootstrap = {
 /* This function waits until it is possible to write a full sound buffer */
 static void N3DSAUD_WaitAudio(_THIS)
 {
-	/* Don't block on first calls to simulate initial fragment filling. */
-	/*if (this->hidden->initial_calls)
-		this->hidden->initial_calls--;
-	else*/
-		//SDL_Delay(this->hidden->write_delay);
 		while(this->hidden->waveBuf[this->hidden->nextbuf].status != NDSP_WBUF_DONE){
 			SDL_Delay(5);//Give other thread 5ms of execution time.
 		}
@@ -236,9 +231,6 @@ static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	this->hidden->waveBuf[1].status = NDSP_WBUF_DONE;
 
 	stream_offset += this->hidden->mixlen;
-
-	//ndspChnWaveBufAdd(0, &this->hidden->waveBuf[0]);
-	//ndspChnWaveBufAdd(0, &this->hidden->waveBuf[1]);
 
     // end 3ds DSP init
 

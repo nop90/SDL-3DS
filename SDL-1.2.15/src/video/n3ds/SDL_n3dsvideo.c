@@ -179,6 +179,9 @@ static SDL_VideoDevice *N3DS_CreateDevice(int devindex)
 		}
 		return(0);
 	}
+
+	task_init();
+
 	SDL_memset(device->hidden, 0, (sizeof *device->hidden));
 	
 	/* Set the function pointers */
@@ -222,6 +225,7 @@ int N3DS_VideoInit(_THIS, SDL_PixelFormat *vformat)
 {
 	// Initialize graphics
 	gfxInitDefault();
+	gfxSet3D(false);
 	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
 	
 	vformat->BitsPerPixel = 32;	
@@ -248,6 +252,7 @@ Uint32 Rmask, Gmask, Bmask, Amask;
 int hw = next_pow2(width);
 int hh= next_pow2(height);
 
+	this->hidden->exiting = 0;
 	this->hidden->screens = flags & (SDL_DUALSCR); // SDL_DUALSCR = SDL_TOPSCR | SDL_BOTTOMSCR
 	if(this->hidden->screens==0) this->hidden->screens = SDL_TOPSCR; //Default
 	flags &= ~SDL_DUALSCR;
@@ -451,8 +456,10 @@ static void N3DS_UnlockHWSurface(_THIS, SDL_Surface *surface)
 
 static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 {
+	if(this->hidden->exiting) return; //Block video output on SDL_QUIT
+
 	if( this->hidden->bpp == 8) {
-/*
+
 		int i;
 		for(i=0; i< numrects; i++) {
 			SDL_Rect *rect = &rects[i];
@@ -473,7 +480,7 @@ static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 			  }
 			}
 		} 
-*/
+/*
 		Uint8 *src_addr, *dst_addr, *dst_baseaddr;
 		src_addr = this->hidden->palettedbuffer;
 		dst_baseaddr = this->hidden->buffer;
@@ -486,28 +493,30 @@ static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 			dst_addr += 4;
 		  }
 		}
+*/	
 	} 
-	
 	if(this->hidden->buffer) {
 		GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
 
-		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-
 		C3D_TexBind(0, &spritesheet_tex);
-		C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
 		// Convert image to 3DS tiled texture format
 		C3D_SafeDisplayTransfer ((u32*)this->hidden->buffer, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), (u32*)spritesheet_tex.data, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), textureTranferFlags[this->hidden->mode]);
 		gspWaitForPPF();
+
+		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 		if (this->hidden->screens & SDL_TOPSCR) {
 			C3D_FrameDrawOn(VideoSurface1);
+			C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
 			drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
 		}
 		if (this->hidden->screens & SDL_BOTTOMSCR) {
 			C3D_FrameDrawOn(VideoSurface2);
+			C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
 			drawTexture((400-this->hidden->w2*this->hidden->scalex2)/2,(240-this->hidden->h2*this->hidden->scaley2)/2, this->hidden->w2*this->hidden->scalex2, this->hidden->h2*this->hidden->scaley2, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
 		}
 
 		C3D_FrameEnd(0);
+
 	}
 }
 
@@ -522,6 +531,9 @@ static int N3DS_SetColors(_THIS, int firstcolor, int ncolors, SDL_Color *colors)
 }
 
 static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface) {
+
+	if(this->hidden->exiting) return (0); //Block video output on SDL_QUIT
+
 	if( this->hidden->bpp == 8) {
 		Uint8 *src_addr, *dst_addr, *dst_baseaddr;
 		src_addr = this->hidden->palettedbuffer;
@@ -539,19 +551,21 @@ static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface) {
 	
 	GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
 
-	C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-
 	C3D_TexBind(0, &spritesheet_tex);
-	C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
 	// Convert image to 3DS tiled texture format
 	C3D_SafeDisplayTransfer ((u32*)this->hidden->buffer, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), (u32*)spritesheet_tex.data, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), textureTranferFlags[this->hidden->mode]);
 	gspWaitForPPF();
+
+	C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+
 	if (this->hidden->screens & SDL_TOPSCR) {
 		C3D_FrameDrawOn(VideoSurface1);
+		C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
 		drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
 	}
 	if (this->hidden->screens & SDL_BOTTOMSCR) {
 		C3D_FrameDrawOn(VideoSurface2);
+		C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
 		drawTexture((400-this->hidden->w2*this->hidden->scalex2)/2,(240-this->hidden->h2*this->hidden->scaley2)/2, this->hidden->w2*this->hidden->scalex2, this->hidden->h2*this->hidden->scaley2, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
 	}
 
@@ -578,6 +592,7 @@ void N3DS_VideoQuit(_THIS)
 	sceneExit();
 	C3D_Fini();
 	gfxExit();
+	task_exit();
 }
 
 
@@ -637,7 +652,7 @@ static void sceneInit(GSPGPU_FramebufferFormats mode) {
 	C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
 
 	// Configure depth test to overwrite pixels with the same depth (needed to draw overlapping sprites)
-	C3D_DepthTest(true, GPU_GEQUAL, GPU_WRITE_ALL);
+//	C3D_DepthTest(true, GPU_GEQUAL, GPU_WRITE_ALL);
 }
 
 //---------------------------------------------------------------------------------
@@ -675,5 +690,4 @@ void drawTexture( int x, int y, int width, int height, float left, float right, 
 		C3D_ImmSendAttrib(x+width, y+height, 0.5f, 0.0f);
 		C3D_ImmSendAttrib( right, bottom, 0.0f, 0.0f);
 	C3D_ImmDrawEnd();
-
 }

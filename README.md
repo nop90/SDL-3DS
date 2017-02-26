@@ -44,6 +44,13 @@ With these video sizes can be used the following options:
 
 Note: using the SDL_FULLSCREEN flag is the same of using (SDL_TOPSCR | SDL_BOTTOMSCR) 
 
+EVENTS
+============
+
+SDL events handles the interaction with the 3ds home menu in homebrews released in installable format (CIA). The lib puts the code in the sleep mode when closing the lid and triggers a SDL_QUIT event when closing the app from the 3ds home menu.
+
+Rmember that once the SDL_QUIT event is triggered, the code can't access anymore to the video services or thecode will hung.
+
 KEY INPUT
 ============
 
@@ -52,9 +59,11 @@ Default key bindings are:
 	KEY_A -> SDLK_a
 	KEY_B -> SDLK_b
 	KEY_X -> SDLK_x
-	KEY_Y -> SDLK-y
+	KEY_Y -> SDLK_y
 	KEY_L -> SDLK_l
 	KEY_R -> SDLK_r
+	KEY_ZL -> SDLK_LSHIFT
+	KEY_ZR -> SDLK_RSHIFT
 	KEY_START -> SDLK_RETURN
 	KEY_SELECT -> SDLK_ESCAPE
 	KEY_RIGHT -> SDLK_RIGHT
@@ -71,7 +80,7 @@ NOTE: circle pad and C-Stick are not mapped to the direction key by default( cir
 	SDL_N3DSKeyBind(KEY_CPAD_UP|KEY_CSTICK_UP, SDLK_UP);
 	SDL_N3DSKeyBind(KEY_CPAD_DOWN|KEY_CSTICK_DOWN, SDLK_DOWN);
 	SDL_N3DSKeyBind(KEY_CPAD_LEFT|KEY_CSTICK_LEFT, SDLK_LEFT);
-	SDL_N3DSKeyBind(KEY_CPAD_DOWN|KEY_CSTICK_DOWN, SDLK_DOWN);
+	SDL_N3DSKeyBind(KEY_CPAD_RIGHT|KEY_CSTICK_RIGHT, SDLK_RIGHT);
 
 It's not possible to bind a N3DS key to two or more SDL Key values.
 
@@ -80,12 +89,10 @@ JOYSTICK
 
 Joystick support is enabled
 
-
 MOUSEPOINTER
 ============
 
 Mouse pointer is controlled with the touchpad. Touching the bottom screen controls the pointer position and trigger a left button click.
-
 
 AUDIO
 ============
@@ -98,10 +105,7 @@ MULTITHREAD
 
 Multithread is supported. But please bear in mind that due to the design of 3DS' OS, thread won't evenly share CPU time. You would have to use SDL_Delay to give other threads CPU time to run. All threads would be created with a higher priority than the main thread, and they would start running as soon as you create them.
 
-TIMER
-============
 
-Working in progress.
 
 ---
 http://www.libsdl.org/
