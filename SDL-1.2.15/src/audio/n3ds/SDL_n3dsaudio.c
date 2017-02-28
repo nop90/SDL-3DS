@@ -114,13 +114,21 @@ static void N3DSAUD_WaitAudio(_THIS)
 static void N3DSAUD_PlayAudio(_THIS)
 {
 	if (this->hidden->format==NDSP_FORMAT_STEREO_PCM8 || this->hidden->format==NDSP_FORMAT_MONO_PCM8) {
-		memcpy(this->hidden->waveBuf[this->hidden->nextbuf].data_pcm8,this->hidden->mixbuf,this->hidden->mixlen);
-		DSP_FlushDataCache(this->hidden->waveBuf[this->hidden->nextbuf].data_pcm8,
-							this->hidden->waveBuf[this->hidden->nextbuf].nsamples);
+//		if(this->hidden->isSigned) 
+			memcpy(this->hidden->waveBuf[this->hidden->nextbuf].data_pcm8,this->hidden->mixbuf,this->hidden->mixlen);
+/*		else {
+			u8 *dst = this->hidden->waveBuf[this->hidden->nextbuf].data_pcm8;
+			u8 *src = this->hidden->mixbuf;
+			for(int ii = 0; ii< this->hidden->mixlen; ii++) *dst++ = -128 + * src++;
+		} 
+*/		DSP_FlushDataCache(this->hidden->waveBuf[this->hidden->nextbuf].data_pcm8,
+							this->hidden->mixlen);
+//							this->hidden->waveBuf[this->hidden->nextbuf].nsamples);
 	} else {
 		memcpy(this->hidden->waveBuf[this->hidden->nextbuf].data_pcm16,this->hidden->mixbuf,this->hidden->mixlen);
 		DSP_FlushDataCache(this->hidden->waveBuf[this->hidden->nextbuf].data_pcm16,
-							this->hidden->waveBuf[this->hidden->nextbuf].nsamples);
+							this->hidden->mixlen);
+//							this->hidden->waveBuf[this->hidden->nextbuf].nsamples);
 	}
 	this->hidden->waveBuf[this->hidden->nextbuf].offset=0;
 	this->hidden->waveBuf[this->hidden->nextbuf].status=NDSP_WBUF_QUEUED;
@@ -157,33 +165,53 @@ static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	if(spec->channels > 2)
 		spec->channels = 2;
 
-	switch (spec->format&~0x1000) {
-		case AUDIO_S8:
-			/* Signed 8-bit audio supported */
-			this->hidden->format=(spec->channels==2)?format=NDSP_FORMAT_STEREO_PCM8:NDSP_FORMAT_MONO_PCM8;
-			this->hidden->isSigned=1;
-			this->hidden->bytePerSample = (spec->channels);
-			break;
-		case AUDIO_U8:
-			spec->format ^= 0x80;
-			this->hidden->format=(spec->channels==2)?format=NDSP_FORMAT_STEREO_PCM8:NDSP_FORMAT_MONO_PCM8;
-			this->hidden->isSigned=0;
-			this->hidden->bytePerSample = (spec->channels);
-			break;
-		case AUDIO_U16:
-			/* Unsigned 16-bit audio unsupported, convert to S16 */
-			spec->format ^=0x8000;
-			this->hidden->format=(spec->channels==2)?format=NDSP_FORMAT_STEREO_PCM16:NDSP_FORMAT_MONO_PCM16;
-			this->hidden->isSigned=0;
-			this->hidden->bytePerSample = (spec->channels) * 2;
-			break;
-		case AUDIO_S16:
-			/* Signed 16-bit audio supported */
-			this->hidden->format=(spec->channels==2)?format=NDSP_FORMAT_STEREO_PCM16:NDSP_FORMAT_MONO_PCM16;
-			this->hidden->isSigned=1;
-			this->hidden->bytePerSample = (spec->channels) * 2;
-			break;
+    Uint16 test_format = SDL_FirstAudioFormat(spec->format);
+    int valid_datatype = 0;
+    while ((!valid_datatype) && (test_format)) {
+        spec->format = test_format;
+        switch (test_format) {
+ 
+//		switch (spec->format&~0x1000) {
+			case AUDIO_S8:
+				/* Signed 8-bit audio supported */
+				this->hidden->format=(spec->channels==2)?format=NDSP_FORMAT_STEREO_PCM8:NDSP_FORMAT_MONO_PCM8;
+				this->hidden->isSigned=1;
+				this->hidden->bytePerSample = (spec->channels);
+				   valid_datatype = 1;
+				break;
+	/*		case AUDIO_U8:
+				///nsigned 8-bit audio supported with conversion to s8*
+				spec->format ^= 0x80;
+				this->hidden->format=(spec->channels==2)?format=NDSP_FORMAT_STEREO_PCM8:NDSP_FORMAT_MONO_PCM8;
+				this->hidden->isSigned=0;
+				this->hidden->bytePerSample = (spec->channels);
+				   valid_datatype = 1;
+				break;
+			case AUDIO_U16:
+				// Unsigned 16-bit audio unsupported 
+				spec->format ^=0x8000;
+				this->hidden->format=(spec->channels==2)?format=NDSP_FORMAT_STEREO_PCM16:NDSP_FORMAT_MONO_PCM16;
+				this->hidden->isSigned=0;
+				this->hidden->bytePerSample = (spec->channels) * 2;
+				break;
+	*/
+			case AUDIO_S16:
+				/* Signed 16-bit audio supported */
+				this->hidden->format=(spec->channels==2)?format=NDSP_FORMAT_STEREO_PCM16:NDSP_FORMAT_MONO_PCM16;
+				this->hidden->isSigned=1;
+				this->hidden->bytePerSample = (spec->channels) * 2;
+				   valid_datatype = 1;
+				break;
+			default:
+				test_format = SDL_NextAudioFormat();
+				break;
+		}
 	}
+
+    if (!valid_datatype) {  /* shouldn't happen, but just in case... */
+        SDL_SetError("Unsupported audio format");
+        return (-1);
+    }
 
 	/* Update the fragment size as size in bytes */
 	SDL_CalculateAudioSpec(spec);

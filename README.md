@@ -74,7 +74,7 @@ Default key bindings are:
  
 there is a custom function to bind one or more N3DS keys to a SDL key value:
 
- void SDL_N3DSKeyBind(unsigned int hidkey, SDLKey key)
+	void SDL_N3DSKeyBind(unsigned int hidkey, SDLKey key)
 
 NOTE: circle pad and C-Stick are not mapped to the direction key by default( circle pad is mapped to the default Joystick) but if someone wants to make this mapping he can use the following code:
 	
@@ -97,6 +97,8 @@ Mouse pointer is controlled with the touchpad. Touching the bottom screen contro
 
 AUDIO
 ============
+
+Supported audio format are AUDIO_S8 and AUDIO_S16.
 
 Audio uses the DSP, so to use it with a homebrew compiled as a CIA you need to dump the DSp Firm in the 3ds folder. 
 Audio thread would have a higher priority than the main thread, but it would give main thread a fixed time to process the audio. If you are experiencing problems with the audio, try using a larger sample buffer or change the delay time in SDL_n3dsaudio.c

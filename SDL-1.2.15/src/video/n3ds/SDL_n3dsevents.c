@@ -88,9 +88,7 @@ void N3DS_PumpEvents(_THIS)
 	
 	if(!aptMainLoop())
 	{
-		SDL_Event sdlevent;
-		sdlevent.type = SDL_QUIT;
-		SDL_PushEvent(&sdlevent);
+		SDL_PrivateQuit();
 		this->hidden->exiting = 1;
 	}
 	svcSleepThread(1000000); //1ms;
