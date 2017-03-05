@@ -33,18 +33,18 @@ CTRULIB	:= $(DEVKITPRO)/libctru
 INCLUDES = -I./include -I$(CTRULIB)/include 
 
 SUPPORT_TREMOR = false
-SUPPORT_VORBIS = true
+SUPPORT_VORBIS = false
 SUPPORT_MAD = true
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH		:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard
-CFLAGS		:=	-g -Wall -O2 -mword-relocations -fno-short-enums \
+CFLAGS		:=	-g -Wall -O2 -mword-relocations  \
 			-fomit-frame-pointer -ffast-math  -fno-pic \
 			$(ARCH)
-CFLAGS		+=	$(INCLUDES) -DARM11 -D_3DS -D__3DS__ -DENABLE_3DS -DWAV_MUSIC \
-				-I$(CTRULIB)/../portlibs/armv6k/include -I$(CTRULIB)/../portlibs/armv6k/include/SDL
+CFLAGS		+=	$(INCLUDES) -DARM11 -D_3DS -D__3DS__ -DENABLE_3DS -DWAV_MUSIC -DMOD_MUSIC \
+				-I$(CTRULIB)/../portlibs/armv6k/include -I$(CTRULIB)/../portlibs/3ds/include/SDL
 
 ifeq ($(SUPPORT_TREMOR), true)
 CFLAGS += -DOGG_MUSIC -DOGG_USE_TREMOR
@@ -64,7 +64,7 @@ LDFLAGS		:=	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 CFLAGS		+= -Wno-unused-variable
 
-LIBS	:= -lmad -lvorbis -lSDL -lctru -lm
+LIBS	:= -lmad -lmikmod -lvorbis -lSDL -lctru -lm
 
 all: $(OBJS) $(TARGET_LIB)
 
@@ -72,8 +72,11 @@ $(TARGET_LIB): $(OBJS)
 	$(AR) -rc $@ $^
 
 install: $(TARGET_LIB)
-	@mkdir -p "$(DEVKITPRO)/portlibs/armv6k/lib"
-	@cp  $(TARGET_LIB) "$(DEVKITPRO)/portlibs/armv6k/lib"
+	@mkdir -p "$(DEVKITPRO)/portlibs/3ds/lib"
+	@cp  $(TARGET_LIB) "$(DEVKITPRO)/portlibs/3ds/lib"
+	@mkdir -p "$(DEVKITPRO)/portlibs/3ds/include"
+	@mkdir -p "$(DEVKITPRO)/portlibs/3ds/include/SDL"
+	@cp SDL_mixer.h "$(DEVKITPRO)/portlibs/3ds/include/SDL"
 	@echo "Installed!"
 
 clean:
