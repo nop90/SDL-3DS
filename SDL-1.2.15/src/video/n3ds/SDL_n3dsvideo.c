@@ -454,6 +454,33 @@ static void N3DS_UnlockHWSurface(_THIS, SDL_Surface *surface)
 	return;
 }
 
+static void drawBuffers(_THIS)
+{
+	if(this->hidden->buffer) {
+		GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
+
+		C3D_TexBind(0, &spritesheet_tex);
+		C3D_SafeDisplayTransfer ((u32*)this->hidden->buffer, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), (u32*)spritesheet_tex.data, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), textureTranferFlags[this->hidden->mode]);
+		gspWaitForPPF();
+
+		gspWaitForVBlank();
+		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+
+		if (this->hidden->screens & SDL_TOPSCR) {
+			C3D_FrameDrawOn(VideoSurface1);
+			C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
+			drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
+		}
+		if (this->hidden->screens & SDL_BOTTOMSCR) {
+			C3D_FrameDrawOn(VideoSurface2);
+			C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
+			drawTexture((400-this->hidden->w2*this->hidden->scalex2)/2,(240-this->hidden->h2*this->hidden->scaley2)/2, this->hidden->w2*this->hidden->scalex2, this->hidden->h2*this->hidden->scaley2, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
+		}
+
+		C3D_FrameEnd(0);
+	}
+}
+
 static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 {
 	if(this->hidden->exiting) return; //Block video output on SDL_QUIT
@@ -471,9 +498,10 @@ static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 			cols = (rect->x + rect->w > this->info.current_w) ? this->info.current_w - rect->x : rect->w;
 			rows = (rect->y + rect->h > this->info.current_h) ? this->info.current_h - rect->y : rect->h;
 			for(y=0;y<rows;y++) {
+			  x = 0;
 			  src_addr = src_baseaddr + rect->x + x + (rect->y + y) * this->info.current_w;
 			  dst_addr = dst_baseaddr + (rect->x + x + (rect->y + y) * this->hidden->w) * 4;
-			  for(x=0;x<cols;x++) {
+			  for(;x<cols;x++) {
 				*(u32*)dst_addr=n3ds_palette[*(Uint8 *)src_addr];
 				src_addr++;
 				dst_addr += 4;
@@ -494,30 +522,9 @@ static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 		  }
 		}
 */	
-	} 
-	if(this->hidden->buffer) {
-		GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
-
-		C3D_TexBind(0, &spritesheet_tex);
-		// Convert image to 3DS tiled texture format
-		C3D_SafeDisplayTransfer ((u32*)this->hidden->buffer, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), (u32*)spritesheet_tex.data, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), textureTranferFlags[this->hidden->mode]);
-		gspWaitForPPF();
-
-		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-		if (this->hidden->screens & SDL_TOPSCR) {
-			C3D_FrameDrawOn(VideoSurface1);
-			C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
-			drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
-		}
-		if (this->hidden->screens & SDL_BOTTOMSCR) {
-			C3D_FrameDrawOn(VideoSurface2);
-			C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
-			drawTexture((400-this->hidden->w2*this->hidden->scalex2)/2,(240-this->hidden->h2*this->hidden->scaley2)/2, this->hidden->w2*this->hidden->scalex2, this->hidden->h2*this->hidden->scaley2, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
-		}
-
-		C3D_FrameEnd(0);
-
 	}
+
+	drawBuffers(this);
 }
 
 #define N3DS_MAP_RGB(r, g, b)	((Uint32)r << 24 | (Uint32)g << 16 | (Uint32)b << 8 | 0xff)
@@ -547,29 +554,9 @@ static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface) {
 			dst_addr += 4;
 		  }
 		}
-	} 
-	
-	GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
-
-	C3D_TexBind(0, &spritesheet_tex);
-	// Convert image to 3DS tiled texture format
-	C3D_SafeDisplayTransfer ((u32*)this->hidden->buffer, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), (u32*)spritesheet_tex.data, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), textureTranferFlags[this->hidden->mode]);
-	gspWaitForPPF();
-
-	C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-
-	if (this->hidden->screens & SDL_TOPSCR) {
-		C3D_FrameDrawOn(VideoSurface1);
-		C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
-		drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
-	}
-	if (this->hidden->screens & SDL_BOTTOMSCR) {
-		C3D_FrameDrawOn(VideoSurface2);
-		C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
-		drawTexture((400-this->hidden->w2*this->hidden->scalex2)/2,(240-this->hidden->h2*this->hidden->scaley2)/2, this->hidden->w2*this->hidden->scalex2, this->hidden->h2*this->hidden->scaley2, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
 	}
 
-	C3D_FrameEnd(0);
+	drawBuffers(this);
 
 	return (0);
 }
@@ -671,21 +658,15 @@ void drawTexture( int x, int y, int width, int height, float left, float right, 
 //---------------------------------------------------------------------------------
 
 	// Draw a textured quad directly
-	C3D_ImmDrawBegin(GPU_TRIANGLES);
-		C3D_ImmSendAttrib(x, y, 0.5f, 0.0f); // v0=position
-		C3D_ImmSendAttrib( left, top, 0.0f, 0.0f);
-
-		C3D_ImmSendAttrib(x+width, y+height, 0.5f, 0.0f);
-		C3D_ImmSendAttrib( right, bottom, 0.0f, 0.0f);
-
-		C3D_ImmSendAttrib(x+width, y, 0.5f, 0.0f);
-		C3D_ImmSendAttrib( right, top, 0.0f, 0.0f);
-
+	C3D_ImmDrawBegin(GPU_TRIANGLE_STRIP);
 		C3D_ImmSendAttrib(x, y, 0.5f, 0.0f); // v0=position
 		C3D_ImmSendAttrib( left, top, 0.0f, 0.0f);
 
 		C3D_ImmSendAttrib(x, y+height, 0.5f, 0.0f);
 		C3D_ImmSendAttrib( left, bottom, 0.0f, 0.0f);
+
+		C3D_ImmSendAttrib(x+width, y, 0.5f, 0.0f);
+		C3D_ImmSendAttrib( right, top, 0.0f, 0.0f);
 
 		C3D_ImmSendAttrib(x+width, y+height, 0.5f, 0.0f);
 		C3D_ImmSendAttrib( right, bottom, 0.0f, 0.0f);
