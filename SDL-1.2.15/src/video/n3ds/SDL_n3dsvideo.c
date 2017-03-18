@@ -406,7 +406,11 @@ int hh= next_pow2(height);
 		this->hidden->scalex= 1.0f;
 		this->hidden->scaley= 1.0f;
 	}
-	this->hidden->scalex2= (400.00f/320.0f)*this->hidden->scalex;
+	
+	if(this->hidden->screens & SDL_TOPSCR) 
+		this->hidden->scalex2= (400.00f/320.0f)*this->hidden->scalex;
+	else
+		this->hidden->scalex2= this->hidden->scalex;
 	this->hidden->scaley2= this->hidden->scaley;
 
 	this->info.current_w = current->w = width;
@@ -465,10 +469,12 @@ static void drawBuffers(_THIS)
 
 		gspWaitForVBlank();
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+//		C3D_FrameBegin(0);
 
 		if (this->hidden->screens & SDL_TOPSCR) {
 			C3D_FrameDrawOn(VideoSurface1);
 			C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
+			drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
 			drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
 		}
 		if (this->hidden->screens & SDL_BOTTOMSCR) {
