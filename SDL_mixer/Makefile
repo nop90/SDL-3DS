@@ -32,7 +32,7 @@ OBJS =	dynamic_flac.o \
 CTRULIB	:= $(DEVKITPRO)/libctru
 INCLUDES = -I./include -I$(CTRULIB)/include 
 
-SUPPORT_TREMOR = false
+SUPPORT_TREMOR = true
 SUPPORT_VORBIS = false
 SUPPORT_MAD = true
 
@@ -43,11 +43,11 @@ ARCH		:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard
 CFLAGS		:=	-g -Wall -O2 -mword-relocations  \
 			-fomit-frame-pointer -ffast-math  -fno-pic \
 			$(ARCH)
-CFLAGS		+=	$(INCLUDES) -DARM11 -D_3DS -D__3DS__ -DENABLE_3DS -DWAV_MUSIC -DMOD_MUSIC \
+CFLAGS		+=	$(INCLUDES) -DARM11 -D_3DS -D__3DS__ -DENABLE_3DS \
 				-I$(CTRULIB)/../portlibs/armv6k/include -I$(CTRULIB)/../portlibs/3ds/include/SDL
 
 ifeq ($(SUPPORT_TREMOR), true)
-CFLAGS += -DOGG_MUSIC -DOGG_USE_TREMOR
+CFLAGS += -DWAV_MUSIC -DMOD_MUSIC -DLIBMIKMOD_MUSIC -DMP3_MAD_MUSIC -DOGG_MUSIC -DOGG_USE_TREMOR 
 endif
 
 ifeq ($(SUPPORT_VORBIS), true)
@@ -64,7 +64,7 @@ LDFLAGS		:=	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 CFLAGS		+= -Wno-unused-variable
 
-LIBS	:= -lmad -lmikmod -lvorbis -lSDL -lctru -lm
+LIBS	:= -lmad -lmikmod -lSDL -lctru -lm
 
 all: $(OBJS) $(TARGET_LIB)
 
