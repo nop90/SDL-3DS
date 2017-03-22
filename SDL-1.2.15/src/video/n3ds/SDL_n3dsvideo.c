@@ -21,26 +21,14 @@
 */
 #include "SDL_config.h"
 
-/* Dummy SDL video driver implementation; this is just enough to make an
- *  SDL-based application THINK it's got a working video driver, for
- *  applications that call SDL_Init(SDL_INIT_VIDEO) when they don't need it,
- *  and also for use as a collection of stubs when porting SDL to a new
- *  platform for which you haven't yet written a valid video driver.
- *
- * This is also a great way to determine bottlenecks: if you think that SDL
- *  is a performance problem for a given platform, enable this driver, and
- *  then see if your application runs faster without video overhead.
- *
- * Initial work by Ryan C. Gordon (icculus@icculus.org). A good portion
- *  of this was cut-and-pasted from Stephane Peter's work in the AAlib
- *  SDL video driver.  Renamed to "DUMMY" by Sam Lantinga.
- */
-
 #include "SDL_video.h"
 #include "SDL_mouse.h"
 #include "../SDL_sysvideo.h"
 #include "../SDL_pixels_c.h"
 #include "../../events/SDL_events_c.h"
+
+#include "SDL_thread.h"
+#include "SDL_timer.h"
 
 #include <3ds.h>
 #include <citro3d.h>
@@ -134,6 +122,7 @@ static int N3DS_LockHWSurface(_THIS, SDL_Surface *surface);
 static void N3DS_UnlockHWSurface(_THIS, SDL_Surface *surface);
 static void N3DS_FreeHWSurface(_THIS, SDL_Surface *surface);
 static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface); 
+static int videoThread(void* data);
 
 //Copied from sf2dlib that grabbet it from: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
 unsigned int next_pow2(unsigned int v)
@@ -234,7 +223,7 @@ int N3DS_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	vformat->Gmask = 0x00ff0000;
 	vformat->Bmask = 0x0000ff00; 
 	vformat->Amask = 0x000000ff; 
-
+	
 	/* We're done! */
 	return(0);
 }
@@ -310,6 +299,12 @@ int hh= next_pow2(height);
 		default:
 			return NULL;
 			break;
+	}
+
+	if (this->hidden->thread) {
+		this->hidden->running = false;
+		int threadReturnValue;
+	    SDL_WaitThread(this->hidden->thread, &threadReturnValue);
 	}
 
 	if ( this->hidden->buffer ) {
@@ -432,6 +427,14 @@ int hh= next_pow2(height);
 	C3D_TexInit(&spritesheet_tex, hw, hh, this->hidden->mode);
 	C3D_TexSetFilter(&spritesheet_tex, GPU_LINEAR, GPU_NEAREST);
 	C3D_TexBind(0, &spritesheet_tex);
+	
+	this->hidden->drawing = false;
+	this->hidden->rendering = false;
+	this->hidden->flip = false;
+	this->hidden->running = true;
+	this->hidden->thread = SDL_CreateThread(videoThread, (void *) this);
+	svcSetThreadPriority((Handle)threadGetHandle(this->hidden->thread), 0x18);
+
 
 	/* We're done */
 	return(current);
@@ -458,33 +461,56 @@ static void N3DS_UnlockHWSurface(_THIS, SDL_Surface *surface)
 	return;
 }
 
+static int videoThread(void* data)
+{
+
+    _THIS = (SDL_VideoDevice *) data;
+	static int count=0;
+ 
+	while(this->hidden->running) {
+	this->hidden->rendering = true;
+//		if(!this->hidden->drawing && this->hidden->flip) {
+		if(!this->hidden->drawing && (this->hidden->flip || count>24)) { // after 25 * 4 = 100 ms we always draw a frame to mantain at least 10 FPS to not hang make the GPU
+			GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
+			gspWaitForVBlank();
+			C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+
+			if (this->hidden->screens & SDL_TOPSCR) {
+				C3D_FrameDrawOn(VideoSurface1);
+				C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
+				drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
+			}
+			if (this->hidden->screens & SDL_BOTTOMSCR) {
+				C3D_FrameDrawOn(VideoSurface2);
+				C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
+				drawTexture((400-this->hidden->w2*this->hidden->scalex2)/2,(240-this->hidden->h2*this->hidden->scaley2)/2, this->hidden->w2*this->hidden->scalex2, this->hidden->h2*this->hidden->scaley2, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
+			}
+
+			C3D_FrameEnd(0);
+			this->hidden->flip = false;
+			count=0;
+		} 
+		this->hidden->rendering = false;
+		count++;
+		SDL_Delay(4);//Give other threads 4ms of execution time.  
+	}
+	return 0;
+}
+
 static void drawBuffers(_THIS)
 {
-	if(this->hidden->buffer) {
+	this->hidden->drawing = true;
+	if(this->hidden->buffer && !this->hidden->flip && !this->hidden->rendering) {
+//	if(this->hidden->buffer && !this->hidden->flip) {
 		GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
 
 		C3D_TexBind(0, &spritesheet_tex);
 		C3D_SafeDisplayTransfer ((u32*)this->hidden->buffer, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), (u32*)spritesheet_tex.data, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), textureTranferFlags[this->hidden->mode]);
 		gspWaitForPPF();
 
-		gspWaitForVBlank();
-		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-//		C3D_FrameBegin(0);
-
-		if (this->hidden->screens & SDL_TOPSCR) {
-			C3D_FrameDrawOn(VideoSurface1);
-			C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
-			drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
-			drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
-		}
-		if (this->hidden->screens & SDL_BOTTOMSCR) {
-			C3D_FrameDrawOn(VideoSurface2);
-			C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
-			drawTexture((400-this->hidden->w2*this->hidden->scalex2)/2,(240-this->hidden->h2*this->hidden->scaley2)/2, this->hidden->w2*this->hidden->scalex2, this->hidden->h2*this->hidden->scaley2, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
-		}
-
-		C3D_FrameEnd(0);
+		this->hidden->flip = true;
 	}
+	this->hidden->drawing = false;
 }
 
 static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
@@ -492,7 +518,7 @@ static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 	if(this->hidden->exiting) return; //Block video output on SDL_QUIT
 
 	if( this->hidden->bpp == 8) {
-
+/*
 		int i;
 		for(i=0; i< numrects; i++) {
 			SDL_Rect *rect = &rects[i];
@@ -514,7 +540,7 @@ static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 			  }
 			}
 		} 
-/*
+*/
 		Uint8 *src_addr, *dst_addr, *dst_baseaddr;
 		src_addr = this->hidden->palettedbuffer;
 		dst_baseaddr = this->hidden->buffer;
@@ -527,7 +553,7 @@ static void N3DS_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 			dst_addr += 4;
 		  }
 		}
-*/	
+	
 	}
 
 	drawBuffers(this);
@@ -572,6 +598,8 @@ static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface) {
 */
 void N3DS_VideoQuit(_THIS)
 {
+	this->hidden->running = false;
+	this->hidden->flip = false;
 	if (this->hidden->buffer)
 	{
 		linearFree(this->hidden->buffer);

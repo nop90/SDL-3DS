@@ -56,7 +56,13 @@ struct SDL_PrivateVideoData {
 	int bpp;
 // block video output on SDL_QUIT
 	int exiting;
-	
+// Video process flags
+	SDL_Thread *thread;
+	bool flip;
+	bool running;
+	bool rendering;
+	bool drawing;
+
 };
 
 #endif /* _SDL_n3dsvideo_h */
