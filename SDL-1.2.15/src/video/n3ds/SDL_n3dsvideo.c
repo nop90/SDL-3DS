@@ -122,7 +122,7 @@ static int N3DS_LockHWSurface(_THIS, SDL_Surface *surface);
 static void N3DS_UnlockHWSurface(_THIS, SDL_Surface *surface);
 static void N3DS_FreeHWSurface(_THIS, SDL_Surface *surface);
 static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface); 
-static int videoThread(void* data);
+static void videoThread(void* data);
 
 //Copied from sf2dlib that grabbet it from: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
 unsigned int next_pow2(unsigned int v)
@@ -301,10 +301,9 @@ int hh= next_pow2(height);
 			break;
 	}
 
-	if (this->hidden->thread) {
+	if (this->hidden->threadhandle) {
 		this->hidden->running = false;
-		int threadReturnValue;
-	    SDL_WaitThread(this->hidden->thread, &threadReturnValue);
+		while(this->hidden->threadhandle); // cleaned on thread exit
 	}
 
 	if ( this->hidden->buffer ) {
@@ -432,9 +431,7 @@ int hh= next_pow2(height);
 	this->hidden->rendering = false;
 	this->hidden->flip = false;
 	this->hidden->running = true;
-	this->hidden->thread = SDL_CreateThread(videoThread, (void *) this);
-	svcSetThreadPriority((Handle)threadGetHandle(this->hidden->thread), 0x18);
-
+	this->hidden->threadhandle = threadCreate(videoThread, (void *) this, 1024, 0x18, -2, true);
 
 	/* We're done */
 	return(current);
@@ -461,7 +458,7 @@ static void N3DS_UnlockHWSurface(_THIS, SDL_Surface *surface)
 	return;
 }
 
-static int videoThread(void* data)
+static void videoThread(void* data)
 {
 
     _THIS = (SDL_VideoDevice *) data;
@@ -494,7 +491,7 @@ static int videoThread(void* data)
 		count++;
 		SDL_Delay(4);//Give other threads 4ms of execution time.  
 	}
-	return 0;
+	this->hidden->threadhandle = NULL;
 }
 
 static void drawBuffers(_THIS)

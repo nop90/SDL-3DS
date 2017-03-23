@@ -57,7 +57,7 @@ struct SDL_PrivateVideoData {
 // block video output on SDL_QUIT
 	int exiting;
 // Video process flags
-	SDL_Thread *thread;
+	Thread threadhandle;
 	bool flip;
 	bool running;
 	bool rendering;
