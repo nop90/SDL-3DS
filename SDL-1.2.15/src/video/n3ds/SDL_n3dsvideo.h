@@ -54,6 +54,8 @@ struct SDL_PrivateVideoData {
 	unsigned int fitscreen; // SDL_TRIMBOTTOMSCR, SDL_FITWIDTH, SDL_FITHEIGHT (SDL_FULLSCREEN sets both SDL_FITWIDTH and SDL_FITHEIGHT)
 	int byteperpixel;
 	int bpp;
+// video surface
+	SDL_Surface* currentVideoSurface;	
 // block video output on SDL_QUIT
 	int exiting;
 // Video process flags

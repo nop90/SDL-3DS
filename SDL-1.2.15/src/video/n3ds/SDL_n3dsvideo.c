@@ -124,7 +124,7 @@ static void N3DS_FreeHWSurface(_THIS, SDL_Surface *surface);
 static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface); 
 static void videoThread(void* data);
 
-//Copied from sf2dlib that grabbet it from: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+//Copied from sf2dlib that grabbed it from: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
 unsigned int next_pow2(unsigned int v)
 {
 	v--;
@@ -146,8 +146,9 @@ static int N3DS_Available(void)
 
 static void N3DS_DeleteDevice(SDL_VideoDevice *device)
 {
-	SDL_free(device->hidden);
-	SDL_free(device);
+	if (device->hidden) SDL_free(device->hidden);
+	if (device) SDL_free(device);
+	device=NULL;
 }
 
 static SDL_VideoDevice *N3DS_CreateDevice(int devindex)
@@ -224,6 +225,8 @@ int N3DS_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	vformat->Bmask = 0x0000ff00; 
 	vformat->Amask = 0x000000ff; 
 	
+	this->hidden->exiting = 0;
+
 	/* We're done! */
 	return(0);
 }
@@ -241,7 +244,6 @@ Uint32 Rmask, Gmask, Bmask, Amask;
 int hw = next_pow2(width);
 int hh= next_pow2(height);
 
-	this->hidden->exiting = 0;
 	this->hidden->screens = flags & (SDL_DUALSCR); // SDL_DUALSCR = SDL_TOPSCR | SDL_BOTTOMSCR
 	if(this->hidden->screens==0) this->hidden->screens = SDL_TOPSCR; //Default
 	flags &= ~SDL_DUALSCR;
@@ -301,9 +303,12 @@ int hh= next_pow2(height);
 			break;
 	}
 
+// if there is a video thread running, stop and free it
 	if (this->hidden->threadhandle) {
 		this->hidden->running = false;
-		while(this->hidden->threadhandle); // cleaned on thread exit
+		threadJoin(this->hidden->threadhandle, U64_MAX);
+		threadFree(this->hidden->threadhandle);
+		this->hidden->threadhandle = NULL;
 	}
 
 	if ( this->hidden->buffer ) {
@@ -431,8 +436,9 @@ int hh= next_pow2(height);
 	this->hidden->rendering = false;
 	this->hidden->flip = false;
 	this->hidden->running = true;
-	this->hidden->threadhandle = threadCreate(videoThread, (void *) this, 1024, 0x18, -2, true);
+	this->hidden->threadhandle = threadCreate(videoThread, (void *) this, 1024, 0x18, -2, false);
 
+	this->hidden->currentVideoSurface = current; 
 	/* We're done */
 	return(current);
 }
@@ -463,7 +469,7 @@ static void videoThread(void* data)
 
     _THIS = (SDL_VideoDevice *) data;
  
-	while(this->hidden->running) {
+	while(this->hidden->running && !this->hidden->exiting) {
 	this->hidden->rendering = true;
 		if(!this->hidden->drawing && this->hidden->flip) {
 			GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
@@ -487,7 +493,6 @@ static void videoThread(void* data)
 		this->hidden->rendering = false;
 		SDL_Delay(4);//Give other threads 4ms of execution time.  
 	}
-	this->hidden->threadhandle = NULL;
 }
 
 static void drawBuffers(_THIS)
@@ -591,6 +596,12 @@ static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface) {
 void N3DS_VideoQuit(_THIS)
 {
 	this->hidden->running = false;
+
+	if (this->hidden->threadhandle) {
+		threadJoin(this->hidden->threadhandle, U64_MAX);
+		threadFree(this->hidden->threadhandle);
+		this->hidden->threadhandle = NULL;
+	}
 	this->hidden->flip = false;
 	if (this->hidden->buffer)
 	{
@@ -599,9 +610,11 @@ void N3DS_VideoQuit(_THIS)
 	}
 	if (this->hidden->palettedbuffer)
 	{
-		linearFree(this->hidden->palettedbuffer);
+		free(this->hidden->palettedbuffer);
 		this->hidden->palettedbuffer = NULL;
 	}
+	this->hidden->currentVideoSurface->pixels = NULL; // set to buffer or to palettedbuffer, so now pointing to not allocated memory
+	
 	sceneExit();
 	C3D_Fini();
 	gfxExit();
