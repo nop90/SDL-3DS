@@ -462,12 +462,10 @@ static void videoThread(void* data)
 {
 
     _THIS = (SDL_VideoDevice *) data;
-	static int count=0;
  
 	while(this->hidden->running) {
 	this->hidden->rendering = true;
-//		if(!this->hidden->drawing && this->hidden->flip) {
-		if(!this->hidden->drawing && (this->hidden->flip || count>24)) { // after 25 * 4 = 100 ms we always draw a frame to mantain at least 10 FPS to not hang make the GPU
+		if(!this->hidden->drawing && this->hidden->flip) {
 			GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
 			gspWaitForVBlank();
 			C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
@@ -485,10 +483,8 @@ static void videoThread(void* data)
 
 			C3D_FrameEnd(0);
 			this->hidden->flip = false;
-			count=0;
 		} 
 		this->hidden->rendering = false;
-		count++;
 		SDL_Delay(4);//Give other threads 4ms of execution time.  
 	}
 	this->hidden->threadhandle = NULL;
@@ -498,7 +494,6 @@ static void drawBuffers(_THIS)
 {
 	this->hidden->drawing = true;
 	if(this->hidden->buffer && !this->hidden->flip && !this->hidden->rendering) {
-//	if(this->hidden->buffer && !this->hidden->flip) {
 		GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
 
 		C3D_TexBind(0, &spritesheet_tex);
