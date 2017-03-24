@@ -88,10 +88,13 @@ void N3DS_PumpEvents(_THIS)
 	
 	if(!aptMainLoop())
 	{
-		SDL_PrivateQuit();
+//		SDL_PrivateQuit();
 		this->hidden->exiting = 1;
+		SDL_Event sdlevent;
+		sdlevent.type = SDL_QUIT;
+		SDL_PushEvent(&sdlevent);
 	}
-	svcSleepThread(1000000); //1ms;
+	svcSleepThread(100000); //0.1ms;
 	
 	hidScanInput();
 
