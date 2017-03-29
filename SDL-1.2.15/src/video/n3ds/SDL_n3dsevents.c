@@ -86,13 +86,18 @@ char keymem[N3DS_NUMKEYS];
 void N3DS_PumpEvents(_THIS)
 {
 	
+	if(this->hidden->exiting)
+		return;
 	if(!aptMainLoop())
 	{
-//		SDL_PrivateQuit();
+//		SDL_PrivateQuit(); //SDL_PrivateQuit() may block the SDL_QUIT event, and we want to force it
 		this->hidden->exiting = 1;
+
 		SDL_Event sdlevent;
 		sdlevent.type = SDL_QUIT;
 		SDL_PushEvent(&sdlevent);
+
+//		exit(0);
 	}
 	svcSleepThread(100000); //0.1ms;
 	
@@ -175,7 +180,6 @@ void N3DS_InitOSKeymap(_THIS)
 	hidScanInput();
 	for (i = 0; i < N3DS_NUMKEYS; i++)
 		keymem[i] = (hidKeysHeld() & (1 << i))?1:0;
-
 }
 
 void SDL_N3DSKeyBind(unsigned int hidkey, SDLKey key) {
