@@ -45,7 +45,7 @@ int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 //	s32 priority = 0x2F;
 	s32 priority = 0x30;
 
-	/* Set priority of new thread to the same as the current thread */
+	/* Set priority of new thread higher than the current thread */
 	svcGetThreadPriority(&priority, CURRENT_KTHREAD);
 	if(priority>0x18) priority--;
 

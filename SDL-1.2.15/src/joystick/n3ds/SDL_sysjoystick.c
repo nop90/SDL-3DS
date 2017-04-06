@@ -52,54 +52,54 @@ void SDL_SYS_JoystickUpdate (SDL_Joystick *joystick) {
 
 	key_press = hidKeysDown ();
 	if ((key_press & KEY_A)) {
-		SDL_PrivateJoystickButton (joystick, 0, SDL_PRESSED);
-	}
-	if ((key_press & KEY_B)) {
 		SDL_PrivateJoystickButton (joystick, 1, SDL_PRESSED);
 	}
-	if ((key_press & KEY_X)) {
+	if ((key_press & KEY_B)) {
 		SDL_PrivateJoystickButton (joystick, 2, SDL_PRESSED);
 	}
-	if ((key_press & KEY_Y)) {
+	if ((key_press & KEY_X)) {
 		SDL_PrivateJoystickButton (joystick, 3, SDL_PRESSED);
 	}
-	if ((key_press & KEY_SELECT)) {
-		SDL_PrivateJoystickButton (joystick, 6, SDL_PRESSED);
-	}
-	if ((key_press & KEY_START)) {
-		SDL_PrivateJoystickButton (joystick, 7, SDL_PRESSED);
-	}
-	if ((key_press & KEY_L)) {
+	if ((key_press & KEY_Y)) {
 		SDL_PrivateJoystickButton (joystick, 4, SDL_PRESSED);
 	}
+	if ((key_press & KEY_SELECT)) {
+		SDL_PrivateJoystickButton (joystick, 7, SDL_PRESSED);
+	}
+	if ((key_press & KEY_START)) {
+		SDL_PrivateJoystickButton (joystick, 8, SDL_PRESSED);
+	}
+	if ((key_press & KEY_L)) {
+		SDL_PrivateJoystickButton (joystick, 5, SDL_PRESSED);
+	}
 	if ((key_press&KEY_R)) {
-		SDL_PrivateJoystickButton(joystick,5,SDL_PRESSED);
+		SDL_PrivateJoystickButton(joystick, 6,SDL_PRESSED);
 	}
 
 	key_release = hidKeysUp ();
 	if ((key_release & KEY_A)) {
-		SDL_PrivateJoystickButton (joystick, 0, SDL_RELEASED);
-	}
-	if ((key_release & KEY_B)) {
 		SDL_PrivateJoystickButton (joystick, 1, SDL_RELEASED);
 	}
-	if ((key_release & KEY_X)) {
+	if ((key_release & KEY_B)) {
 		SDL_PrivateJoystickButton (joystick, 2, SDL_RELEASED);
 	}
-	if ((key_release & KEY_Y)) {
+	if ((key_release & KEY_X)) {
 		SDL_PrivateJoystickButton (joystick, 3, SDL_RELEASED);
 	}
-	if ((key_release & KEY_SELECT)) {
-		SDL_PrivateJoystickButton (joystick, 6, SDL_RELEASED);
-	}
-	if ((key_release & KEY_START)) {
-		SDL_PrivateJoystickButton (joystick, 7, SDL_RELEASED);
-	}
-	if ((key_release & KEY_L)) {
+	if ((key_release & KEY_Y)) {
 		SDL_PrivateJoystickButton (joystick, 4, SDL_RELEASED);
 	}
-	if ((key_release & KEY_R)) {
+	if ((key_release & KEY_SELECT)) {
+		SDL_PrivateJoystickButton (joystick, 7, SDL_RELEASED);
+	}
+	if ((key_release & KEY_START)) {
+		SDL_PrivateJoystickButton (joystick, 8, SDL_RELEASED);
+	}
+	if ((key_release & KEY_L)) {
 		SDL_PrivateJoystickButton (joystick, 5, SDL_RELEASED);
+	}
+	if ((key_release & KEY_R)) {
+		SDL_PrivateJoystickButton (joystick, 6, SDL_RELEASED);
 	}
 }
 

@@ -33,18 +33,22 @@
 #include "SDL_n3dsvideo.h"
 #include "SDL_n3dsevents_c.h"
 
-static bool task_quit;
-static Handle task_pause_event;
-static Handle task_suspend_event;
 static aptHookCookie cookie;
+volatile bool app_pause = false;
+volatile bool app_exiting = false;
 
 static void task_apt_hook(APT_HookType hook, void* param) {
-    switch(hook) {
-        case APTHOOK_ONSUSPEND:
-            svcClearEvent(task_suspend_event);
+    
+	switch(hook) {
+		case APTHOOK_ONSUSPEND:
+			app_pause = true;
             break;
-        case APTHOOK_ONSLEEP:
-            svcClearEvent(task_pause_event);
+        case APTHOOK_ONRESTORE:
+			app_pause = false;
+			app_exiting = false;
+            break;
+        case APTHOOK_ONEXIT:
+			app_exiting = true;
             break;
         default:
             break;
@@ -52,32 +56,12 @@ static void task_apt_hook(APT_HookType hook, void* param) {
 }
 
 void task_init() {
-    task_quit = false;
-
-    svcCreateEvent(&task_pause_event, RESET_STICKY);
-
-    svcCreateEvent(&task_suspend_event, RESET_STICKY);
-
-    svcSignalEvent(task_pause_event);
-    svcSignalEvent(task_suspend_event);
-
     aptHook(&cookie, task_apt_hook, NULL);
+	app_pause = false;
 }
 
 void task_exit() {
-    task_quit = true;
-
     aptUnhook(&cookie);
-
-    if(task_pause_event != 0) {
-        svcCloseHandle(task_pause_event);
-        task_pause_event = 0;
-    }
-
-    if(task_suspend_event != 0) {
-        svcCloseHandle(task_suspend_event);
-        task_suspend_event = 0;
-    }
 }
 
 static SDLKey keymap[N3DS_NUMKEYS];
@@ -85,21 +69,16 @@ char keymem[N3DS_NUMKEYS];
 
 void N3DS_PumpEvents(_THIS)
 {
+	svcSleepThread(100000); // 0.1 ms
 	
-	if(this->hidden->exiting)
-		return;
+	if (app_pause) return;
+	
 	if(!aptMainLoop())
 	{
-//		SDL_PrivateQuit(); //SDL_PrivateQuit() may block the SDL_QUIT event, and we want to force it
-		this->hidden->exiting = 1;
-
 		SDL_Event sdlevent;
 		sdlevent.type = SDL_QUIT;
 		SDL_PushEvent(&sdlevent);
-
-//		exit(0);
-	}
-	svcSleepThread(100000); //0.1ms;
+	} 
 	
 	hidScanInput();
 

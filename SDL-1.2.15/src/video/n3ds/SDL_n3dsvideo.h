@@ -32,7 +32,6 @@
 /* Hidden "this" pointer for the video functions */
 #define _THIS	SDL_VideoDevice *this
 
-
 /* Private display data */
 
 struct SDL_PrivateVideoData {
@@ -56,27 +55,8 @@ struct SDL_PrivateVideoData {
 	int bpp;
 // video surface
 	SDL_Surface* currentVideoSurface;	
-// block video output on SDL_QUIT
-	int exiting;
 // Video process flags
-	Thread threadhandle;
-	bool flip;
-	bool running;
-	bool rendering;
-	bool drawing;
-
+	bool blockVideo;  // block video output and events handlings on SDL_QUIT
 };
 
 #endif /* _SDL_n3dsvideo_h */
-
-/*
-/// Framebuffer format.
-typedef enum
-{
-	GSP_RGBA8_OES=0,   ///< RGBA8. (4 bytes)
-	GSP_BGR8_OES=1,    ///< BGR8. (3 bytes)
-	GSP_RGB565_OES=2,  ///< RGB565. (2 bytes)
-	GSP_RGB5_A1_OES=3, ///< RGB5A1. (2 bytes)
-	GSP_RGBA4_OES=4    ///< RGBA4. (2 bytes)
-} GSPGPU_FramebufferFormats;
-*/

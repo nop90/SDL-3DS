@@ -925,6 +925,7 @@ void SDL_FreeSurface (SDL_Surface *surface)
 		SDL_FreeBlitMap(surface->map);
 		surface->map = NULL;
 	}
+
 	if ( surface->hwdata ) {
 		SDL_VideoDevice *video = current_video;
 		SDL_VideoDevice *this  = current_video;

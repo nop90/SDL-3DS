@@ -35,6 +35,9 @@
 
 #include <3ds.h>
 
+//extern volatile bool app_pause;
+extern volatile bool app_exiting;
+
 size_t stream_offset = 0;
 
 /* The tag name used by N3DS audio */
@@ -106,29 +109,26 @@ AudioBootStrap N3DSAUD_bootstrap = {
 /* This function waits until it is possible to write a full sound buffer */
 static void N3DSAUD_WaitAudio(_THIS)
 {
-		while(this->hidden->waveBuf[this->hidden->nextbuf].status != NDSP_WBUF_DONE){
+		if (app_exiting) {
+			SDL_Delay(5); 
+		} else
+		while(this->hidden->waveBuf[this->hidden->nextbuf].status != NDSP_WBUF_DONE && !app_exiting){
 			SDL_Delay(5);//Give other thread 5ms of execution time.
 		}
 }
 
 static void N3DSAUD_PlayAudio(_THIS)
 {
+	if (app_exiting) return; 
+
 	if (this->hidden->format==NDSP_FORMAT_STEREO_PCM8 || this->hidden->format==NDSP_FORMAT_MONO_PCM8) {
-//		if(this->hidden->isSigned) 
 			memcpy(this->hidden->waveBuf[this->hidden->nextbuf].data_pcm8,this->hidden->mixbuf,this->hidden->mixlen);
-/*		else {
-			u8 *dst = this->hidden->waveBuf[this->hidden->nextbuf].data_pcm8;
-			u8 *src = this->hidden->mixbuf;
-			for(int ii = 0; ii< this->hidden->mixlen; ii++) *dst++ = -128 + * src++;
-		} 
-*/		DSP_FlushDataCache(this->hidden->waveBuf[this->hidden->nextbuf].data_pcm8,
+		DSP_FlushDataCache(this->hidden->waveBuf[this->hidden->nextbuf].data_pcm8,
 							this->hidden->mixlen);
-//							this->hidden->waveBuf[this->hidden->nextbuf].nsamples);
 	} else {
 		memcpy(this->hidden->waveBuf[this->hidden->nextbuf].data_pcm16,this->hidden->mixbuf,this->hidden->mixlen);
 		DSP_FlushDataCache(this->hidden->waveBuf[this->hidden->nextbuf].data_pcm16,
 							this->hidden->mixlen);
-//							this->hidden->waveBuf[this->hidden->nextbuf].nsamples);
 	}
 	this->hidden->waveBuf[this->hidden->nextbuf].offset=0;
 	this->hidden->waveBuf[this->hidden->nextbuf].status=NDSP_WBUF_QUEUED;
@@ -171,7 +171,6 @@ static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
         spec->format = test_format;
         switch (test_format) {
  
-//		switch (spec->format&~0x1000) {
 			case AUDIO_S8:
 				/* Signed 8-bit audio supported */
 				this->hidden->format=(spec->channels==2)?format=NDSP_FORMAT_STEREO_PCM8:NDSP_FORMAT_MONO_PCM8;
@@ -179,22 +178,6 @@ static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 				this->hidden->bytePerSample = (spec->channels);
 				   valid_datatype = 1;
 				break;
-	/*		case AUDIO_U8:
-				///nsigned 8-bit audio supported with conversion to s8*
-				spec->format ^= 0x80;
-				this->hidden->format=(spec->channels==2)?format=NDSP_FORMAT_STEREO_PCM8:NDSP_FORMAT_MONO_PCM8;
-				this->hidden->isSigned=0;
-				this->hidden->bytePerSample = (spec->channels);
-				   valid_datatype = 1;
-				break;
-			case AUDIO_U16:
-				// Unsigned 16-bit audio unsupported 
-				spec->format ^=0x8000;
-				this->hidden->format=(spec->channels==2)?format=NDSP_FORMAT_STEREO_PCM16:NDSP_FORMAT_MONO_PCM16;
-				this->hidden->isSigned=0;
-				this->hidden->bytePerSample = (spec->channels) * 2;
-				break;
-	*/
 			case AUDIO_S16:
 				/* Signed 16-bit audio supported */
 				this->hidden->format=(spec->channels==2)?format=NDSP_FORMAT_STEREO_PCM16:NDSP_FORMAT_MONO_PCM16;

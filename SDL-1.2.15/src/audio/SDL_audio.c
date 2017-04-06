@@ -179,7 +179,6 @@ int SDLCALL SDL_RunAudio(void *audiop)
 
 	/* Loop, filling the audio buffers */
 	while ( audio->enabled ) {
-
 		/* Fill the current buffer with sound */
 		if ( audio->convert.needed ) {
 			if ( audio->convert.buf ) {
@@ -401,7 +400,6 @@ int SDL_OpenAudio(SDL_AudioSpec *desired, SDL_AudioSpec *obtained)
 {
 	SDL_AudioDevice *audio;
 	const char *env;
-
 	/* Start up the audio driver, if necessary */
 	if ( ! current_audio ) {
 		if ( (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) ||
@@ -556,6 +554,7 @@ int SDL_OpenAudio(SDL_AudioSpec *desired, SDL_AudioSpec *obtained)
 			audio->thread = SDL_CreateThread(SDL_RunAudio, audio, NULL, NULL);
 #else
 			audio->thread = SDL_CreateThread(SDL_RunAudio, audio);
+
 #endif
 			if ( audio->thread == NULL ) {
 				SDL_CloseAudio();
