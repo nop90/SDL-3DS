@@ -428,7 +428,7 @@ int hh= next_pow2(height);
 	// Setup the textures
 	C3D_TexInit(&spritesheet_tex, hw, hh, this->hidden->mode);
 	C3D_TexSetFilter(&spritesheet_tex, GPU_LINEAR, GPU_NEAREST);
-	C3D_TexBind(0, &spritesheet_tex);
+//	C3D_TexBind(0, &spritesheet_tex);
 	
 	runThread = true;
 	svcCreateEvent(&privateVideoThreadRequest,0);
@@ -468,19 +468,20 @@ static void videoThread(void* data)
 
 	do {
 		if(!app_pause && !app_exiting) { 
-			C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-
-			if (this->hidden->screens & SDL_TOPSCR) {
-				C3D_FrameDrawOn(VideoSurface1);
-				C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
-				drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
-			}
-			if (this->hidden->screens & SDL_BOTTOMSCR) {
-				C3D_FrameDrawOn(VideoSurface2);
-				C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
-				drawTexture((400-this->hidden->w2*this->hidden->scalex)/2,(240-this->hidden->h2*this->hidden->scaley)/2, this->hidden->w2*this->hidden->scalex, this->hidden->h2*this->hidden->scaley, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
-			}
-			C3D_FrameEnd(0);
+//			if (C3D_FrameBegin(C3D_FRAME_SYNCDRAW)){ 
+			if (C3D_FrameBegin(C3D_FRAME_NONBLOCK)){ 
+				if (this->hidden->screens & SDL_TOPSCR) {
+					C3D_FrameDrawOn(VideoSurface1);
+					C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection);
+					drawTexture((400-this->hidden->w1*this->hidden->scalex)/2,(240-this->hidden->h1*this->hidden->scaley)/2, this->hidden->w1*this->hidden->scalex, this->hidden->h1*this->hidden->scaley, this->hidden->l1, this->hidden->r1, this->hidden->t1, this->hidden->b1);  
+				}
+				if (this->hidden->screens & SDL_BOTTOMSCR) {
+					C3D_FrameDrawOn(VideoSurface2);
+					C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection2);
+					drawTexture((400-this->hidden->w2*this->hidden->scalex)/2,(240-this->hidden->h2*this->hidden->scaley)/2, this->hidden->w2*this->hidden->scalex, this->hidden->h2*this->hidden->scaley, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
+				}
+				C3D_FrameEnd(0);
+			} 
 		} 
 
 		svcWaitSynchronization(privateVideoThreadRequest, U64_MAX);
@@ -497,11 +498,20 @@ static void drawBuffers(_THIS)
 	
 		GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
 
-		C3D_TexBind(0, &spritesheet_tex);
 		C3D_SafeDisplayTransfer ((u32*)this->hidden->buffer, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), (u32*)spritesheet_tex.data, GX_BUFFER_DIM(this->hidden->w, this->hidden->h), textureTranferFlags[this->hidden->mode]);
 		gspWaitForPPF();
 
-		GSPGPU_FlushDataCache(this->hidden->buffer, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
+		GSPGPU_FlushDataCache(spritesheet_tex.data, this->hidden->w*this->hidden->h*this->hidden->byteperpixel);
+
+		C3D_TexBind(0, &spritesheet_tex);
+		// Configure the first fragment shading substage to just pass through the texture color
+		// See https://www.opengl.org/sdk/docs/man2/xhtml/glTexEnv.xml for more insight
+		C3D_TexEnv* env = C3D_GetTexEnv(0);
+		C3D_TexEnvSrc(env, C3D_Both, GPU_TEXTURE0, 0, 0);
+		
+		C3D_TexEnvOp(env, C3D_Both, 0, 0, 0);
+		C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
+
 		gspWaitForVBlank();
 		svcSignalEvent(privateVideoThreadRequest); 
 	}
@@ -639,7 +649,7 @@ static void sceneInit(GSPGPU_FramebufferFormats mode) {
 	// Compute the projection matrix
 	// Note: we're setting top to 240 here so origin is at top left.
 	Mtx_OrthoTilt(&projection, 0.0, 400.0, 240.0, 0.0, 0.0, 1.0, true);
-	Mtx_OrthoTilt(&projection2, 0.0, 320.0, 240.0, 0.0, 0.0, 1.0, true);
+	Mtx_OrthoTilt(&projection2, 0.0, 400.0, 240.0, 0.0, 0.0, 1.0, true);
 
 	// Configure buffers
 	C3D_BufInfo* bufInfo = C3D_GetBufInfo();
@@ -663,14 +673,6 @@ static void sceneInit(GSPGPU_FramebufferFormats mode) {
 	VideoSurface2 = C3D_RenderTargetCreate(240*2, 320*2, mode, GPU_RB_DEPTH24_STENCIL8);
 	C3D_RenderTargetSetClear(VideoSurface2, C3D_CLEAR_ALL, clearcolors[mode], 0);
 	C3D_RenderTargetSetOutput(VideoSurface2, GFX_BOTTOM, GFX_LEFT, displayTranferFlags[mode]);
-
-	// Configure the first fragment shading substage to just pass through the texture color
-	// See https://www.opengl.org/sdk/docs/man2/xhtml/glTexEnv.xml for more insight
-	C3D_TexEnv* env = C3D_GetTexEnv(0);
-	C3D_TexEnvSrc(env, C3D_Both, GPU_TEXTURE0, 0, 0);
-
-	C3D_TexEnvOp(env, C3D_Both, 0, 0, 0);
-	C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
 
 	// Configure depth test to overwrite pixels with the same depth (needed to draw overlapping sprites)
 //	C3D_DepthTest(true, GPU_GEQUAL, GPU_WRITE_ALL);
