@@ -161,6 +161,9 @@ static void N3DSAUD_ThreadInit(SDL_AudioDevice *thisdevice)
 
 static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 {	
+   //start 3ds DSP init
+	if(ndspInit()) return (-1);
+
 	int format = 0;
 	if(spec->channels > 2)
 		spec->channels = 2;
@@ -193,6 +196,7 @@ static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 
     if (!valid_datatype) {  /* shouldn't happen, but just in case... */
         SDL_SetError("Unsupported audio format");
+		ndspExit();
         return (-1);
     }
 
@@ -203,6 +207,7 @@ static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	this->hidden->mixlen = spec->size;
 	this->hidden->mixbuf = (Uint8 *) SDL_malloc(spec->size); 
 	if ( this->hidden->mixbuf == NULL ) {
+		ndspExit();
 		return(-1);
 	}
 	SDL_memset(this->hidden->mixbuf, spec->silence, spec->size);
@@ -213,10 +218,7 @@ static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	this->hidden->channels = spec->channels;
 	this->hidden->samplerate = spec->freq;
 
-    //start 3ds DSP init
-	ndspInit();
-
-	ndspChnReset(0);
+ 	ndspChnReset(0);
 	ndspChnWaveBufClear(0);
 
 	ndspSetOutputMode((this->hidden->channels==2)?NDSP_OUTPUT_STEREO:NDSP_OUTPUT_MONO);
