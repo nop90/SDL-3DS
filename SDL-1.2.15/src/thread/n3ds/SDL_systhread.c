@@ -47,11 +47,20 @@ int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 
 	/* Set priority of new thread higher than the current thread */
 	svcGetThreadPriority(&priority, CURRENT_KTHREAD);
-	if(priority>0x18) priority--;
+	if(priority>0x19) priority--;
+	else priority = 0x19; //priority 0x18 is for video thread that is activated by a signal and than must run at maximum priority to avoid flickering
+	if(priority>0x2F) priority = 0x2F;
 
 	thread->handle = threadCreate(ThreadEntry, args,
 		STACKSIZE, priority, -2, false);
 
+	thread->threadid = (int) thread->handle;
+	if (!thread->threadid)
+	{
+	SDL_SetError("Create Thread failed");
+	return(-1);
+	}
+ 
 	return 0;
 }
 
