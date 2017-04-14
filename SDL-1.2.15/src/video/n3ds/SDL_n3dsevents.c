@@ -58,6 +58,7 @@ static void task_apt_hook(APT_HookType hook, void* param) {
 void task_init() {
     aptHook(&cookie, task_apt_hook, NULL);
 	app_pause = false;
+	app_exiting = false;
 }
 
 void task_exit() {
