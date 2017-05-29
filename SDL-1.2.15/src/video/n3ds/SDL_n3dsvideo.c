@@ -478,7 +478,10 @@ static void videoThread(void* data)
 				if (this->hidden->screens & SDL_BOTTOMSCR) {
 					C3D_FrameDrawOn(VideoSurface2);
 					C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, uLoc_projection, &projection2);
-					drawTexture((400-this->hidden->w2*this->hidden->scalex)/2,(240-this->hidden->h2*this->hidden->scaley)/2, this->hidden->w2*this->hidden->scalex, this->hidden->h2*this->hidden->scaley, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
+					if (this->hidden->fitscreen & SDL_FITWIDTH)
+						drawTexture(0,(240-this->hidden->h2*this->hidden->scaley)/2, this->hidden->w2*this->hidden->scalex, this->hidden->h2*this->hidden->scaley, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
+					else
+						drawTexture((400-this->hidden->w2*this->hidden->scalex*1.25)/2,(240-this->hidden->h2*this->hidden->scaley)/2, this->hidden->w2*this->hidden->scalex*1.25, this->hidden->h2*this->hidden->scaley, this->hidden->l2, this->hidden->r2, this->hidden->t2, this->hidden->b2);  
 				}
 				C3D_FrameEnd(0);
 			} 
@@ -671,6 +674,7 @@ static void sceneInit(GSPGPU_FramebufferFormats mode) {
 
 	// Initialize the bottom screen render target
 	VideoSurface2 = C3D_RenderTargetCreate(240*2, 320*2, mode, GPU_RB_DEPTH24_STENCIL8);
+//	VideoSurface2 = C3D_RenderTargetCreate(240*2, 400*2, mode, GPU_RB_DEPTH24_STENCIL8);
 	C3D_RenderTargetSetClear(VideoSurface2, C3D_CLEAR_ALL, clearcolors[mode], 0);
 	C3D_RenderTargetSetOutput(VideoSurface2, GFX_BOTTOM, GFX_LEFT, displayTranferFlags[mode]);
 
