@@ -401,10 +401,10 @@ int hh= next_pow2(height);
 		this->hidden->scaley= 240.0/(float)this->hidden->h1;
 	} else if(this->hidden->fitscreen & SDL_FITWIDTH) {
 		this->hidden->scalex= 400.0/(float)this->hidden->w1;
-		this->hidden->scaley= 1.0f;
+		this->hidden->scaley= this->hidden->scalex;//1.0f;
 	} else 	if(this->hidden->fitscreen & SDL_FITHEIGHT) {
 		this->hidden->scaley= 240.0/(float)this->hidden->h1;
-		this->hidden->scalex= 1.0f;
+		this->hidden->scalex= this->hidden->scaley;//1.0f;
 	} else {
 		this->hidden->scalex= 1.0f;
 		this->hidden->scaley= 1.0f;
