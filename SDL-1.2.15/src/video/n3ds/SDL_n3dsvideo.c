@@ -132,6 +132,9 @@ static void N3DS_UnlockHWSurface(_THIS, SDL_Surface *surface);
 static void N3DS_FreeHWSurface(_THIS, SDL_Surface *surface);
 static int N3DS_FlipHWSurface (_THIS, SDL_Surface *surface); 
 
+int N3DS_ToggleFullScreen(_THIS, int on);
+
+
 //Copied from sf2dlib that grabbed it from: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
 unsigned int next_pow2(unsigned int v)
 {
@@ -206,6 +209,8 @@ static SDL_VideoDevice *N3DS_CreateDevice(int devindex)
 	device->PumpEvents = N3DS_PumpEvents;
 //	device->info.blit_hw = 1;
 
+	device->ToggleFullScreen = N3DS_ToggleFullScreen;
+
 	device->free = N3DS_DeleteDevice;
 
 	return device;
@@ -240,6 +245,43 @@ SDL_Rect **N3DS_ListModes(_THIS, SDL_PixelFormat *format, Uint32 flags)
    	 return (SDL_Rect **) -1;
 }
 
+void N3DS_SetScaling(_THIS)
+{
+	if(this->hidden->flags & SDL_FULLSCREEN) 
+//		flags |= (SDL_FITWIDTH | SDL_FITHEIGHT);
+		this->hidden->fitscreen = (SDL_FITWIDTH | SDL_FITHEIGHT);
+	else
+		this->hidden->fitscreen = this->hidden->flags & (SDL_FITWIDTH | SDL_FITHEIGHT);
+
+	if((this->hidden->fitscreen & SDL_FITWIDTH)&&(this->hidden->fitscreen & SDL_FITHEIGHT)) {
+		this->hidden->scalex= 400.0/(float)this->hidden->w1;
+		this->hidden->scaley= 240.0/(float)this->hidden->h1;
+	} else if(this->hidden->fitscreen & SDL_FITWIDTH) {
+		this->hidden->scalex= 400.0/(float)this->hidden->w1;
+		this->hidden->scaley= this->hidden->scalex;//1.0f;
+	} else 	if(this->hidden->fitscreen & SDL_FITHEIGHT) {
+		this->hidden->scaley= 240.0/(float)this->hidden->h1;
+		this->hidden->scalex= this->hidden->scaley;//1.0f;
+	} else {
+		this->hidden->scalex= 1.0f;
+		this->hidden->scaley= 1.0f;
+	}
+}
+
+int N3DS_ToggleFullScreen(_THIS, int on){
+   	if ((this->hidden->flags & SDL_FITWIDTH) && (this->hidden->flags & SDL_FITHEIGHT)) 
+		return -1;
+	
+	if ( this->hidden->flags & SDL_FULLSCREEN )
+		this->hidden->flags &= ~SDL_FULLSCREEN;
+	else 
+		this->hidden->flags |= SDL_FULLSCREEN;
+
+	N3DS_SetScaling(this);
+	return 1;
+}
+
+
 SDL_Surface *N3DS_SetVideoMode(_THIS, SDL_Surface *current,
 				int width, int height, int bpp, Uint32 flags)
 {
@@ -252,6 +294,8 @@ int hh= next_pow2(height);
 	if(this->hidden->screens==0) this->hidden->screens = SDL_TOPSCR; //Default
 	flags &= ~SDL_DUALSCR;
 	flags |= this->hidden->screens;
+	
+	this->hidden->flags = flags;
 	
 	switch(bpp) {
 		case 0:
@@ -324,10 +368,6 @@ int hh= next_pow2(height);
 		this->hidden->palettedbuffer = NULL;
 	}
 
-	if(flags & SDL_FULLSCREEN) 
-		flags |= (SDL_FITWIDTH | SDL_FITHEIGHT);
-	this->hidden->fitscreen = flags & (SDL_FITWIDTH | SDL_FITHEIGHT);
-
 	this->hidden->buffer = (u8*) linearAlloc(hw * hh * this->hidden->byteperpixel);
 	if ( ! this->hidden->buffer ) {
 		SDL_SetError("Couldn't allocate buffer for requested mode");
@@ -396,6 +436,14 @@ int hh= next_pow2(height);
 	this->hidden->r2 = (float)this->hidden->w2/(float)this->hidden->w;
 	this->hidden->b2 = ((float)this->hidden->y2+(float)this->hidden->h2)/(float)this->hidden->h;
 
+//Set scaling
+/*
+	if(flags & SDL_FULLSCREEN) 
+//		flags |= (SDL_FITWIDTH | SDL_FITHEIGHT);
+		this->hidden->fitscreen = (SDL_FITWIDTH | SDL_FITHEIGHT);
+	else
+		this->hidden->fitscreen = flags & (SDL_FITWIDTH | SDL_FITHEIGHT);
+
 	if((this->hidden->fitscreen & SDL_FITWIDTH)&&(this->hidden->fitscreen & SDL_FITHEIGHT)) {
 		this->hidden->scalex= 400.0/(float)this->hidden->w1;
 		this->hidden->scaley= 240.0/(float)this->hidden->h1;
@@ -409,7 +457,10 @@ int hh= next_pow2(height);
 		this->hidden->scalex= 1.0f;
 		this->hidden->scaley= 1.0f;
 	}
+*/
 
+	N3DS_SetScaling(this);
+	
 	this->info.current_w = current->w = width;
 	this->info.current_h = current->h = height;
 	if(bpp>8) {

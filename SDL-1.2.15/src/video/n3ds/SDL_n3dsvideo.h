@@ -48,6 +48,7 @@ struct SDL_PrivateVideoData {
     void *buffer;
 	Uint8 *palettedbuffer;
 	GSPGPU_FramebufferFormats mode;
+	unsigned int flags; // backup of create device flags
 	unsigned int screens; // SDL_TOPSCR, SDL_BOTTOMSCR, SDL_DUALSCR
 	unsigned int console; // SDL_CONSOLETOP, SDL_CONSOLEBOTTOM
 	unsigned int fitscreen; // SDL_TRIMBOTTOMSCR, SDL_FITWIDTH, SDL_FITHEIGHT (SDL_FULLSCREEN sets both SDL_FITWIDTH and SDL_FITHEIGHT)
