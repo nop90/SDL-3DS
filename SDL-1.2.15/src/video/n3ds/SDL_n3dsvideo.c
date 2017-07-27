@@ -281,6 +281,7 @@ int N3DS_ToggleFullScreen(_THIS, int on){
 	return 1;
 }
 
+Uint32 setVideoModecount = 0;
 
 SDL_Surface *N3DS_SetVideoMode(_THIS, SDL_Surface *current,
 				int width, int height, int bpp, Uint32 flags)
@@ -289,6 +290,8 @@ SDL_Surface *N3DS_SetVideoMode(_THIS, SDL_Surface *current,
 Uint32 Rmask, Gmask, Bmask, Amask; 
 int hw = next_pow2(width);
 int hh= next_pow2(height);
+
+	setVideoModecount++;
 
 	this->hidden->screens = flags & (SDL_DUALSCR); // SDL_DUALSCR = SDL_TOPSCR | SDL_BOTTOMSCR
 	if(this->hidden->screens==0) this->hidden->screens = SDL_TOPSCR; //Default
@@ -351,6 +354,7 @@ int hh= next_pow2(height);
 			break;
 	}
 
+
 // if there is a video thread running, stop and free it
 	runThread = false;
 	if (privateVideoThreadHandle) {
@@ -394,8 +398,11 @@ int hh= next_pow2(height);
 		return(NULL);
 	}
 
+	if(setVideoModecount>1) sceneExit(); // unload rendertarget and the shader
+	
 	//setup the screens mode
 	sceneInit(this->hidden->mode);
+
 	if((flags & SDL_CONSOLETOP) && !(this->hidden->screens & SDL_TOPSCR)) {
 		consoleInit(GFX_TOP, NULL);
 		this->hidden->console = SDL_CONSOLETOP;
