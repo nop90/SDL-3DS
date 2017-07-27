@@ -213,14 +213,16 @@ static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	SDL_memset(this->hidden->mixbuf, spec->silence, spec->size);
 	
 	Uint8 * temp = (Uint8 *) linearAlloc(this->hidden->mixlen*2); 
+	memset(temp,0,this->hidden->mixlen*2);
+	DSP_FlushDataCache(temp,this->hidden->mixlen*2);
 	
 	this->hidden->nextbuf = 0;
 	this->hidden->channels = spec->channels;
 	this->hidden->samplerate = spec->freq;
 
- 	ndspChnReset(0);
 	ndspChnWaveBufClear(0);
-
+ 	ndspChnReset(0);
+	
 	ndspSetOutputMode((this->hidden->channels==2)?NDSP_OUTPUT_STEREO:NDSP_OUTPUT_MONO);
 
 	ndspChnSetInterp(0, NDSP_INTERP_LINEAR);
@@ -233,7 +235,7 @@ static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	mix[1] = 1.0;
 	ndspChnSetMix(0, mix);
 	
-	memset(this->hidden->waveBuf,0,sizeof(this->hidden->waveBuf));
+	memset(this->hidden->waveBuf,0,sizeof(ndspWaveBuf)*2);
 
 	this->hidden->waveBuf[0].data_vaddr = temp;
 	this->hidden->waveBuf[0].nsamples = this->hidden->mixlen / this->hidden->bytePerSample;
@@ -243,19 +245,12 @@ static int N3DSAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	this->hidden->waveBuf[1].nsamples = this->hidden->mixlen / this->hidden->bytePerSample;
 	this->hidden->waveBuf[1].status = NDSP_WBUF_DONE;
 
+	DSP_FlushDataCache(this->hidden->waveBuf,sizeof(ndspWaveBuf)*2);
+
 	stream_offset += this->hidden->mixlen;
 
     // end 3ds DSP init
 
-	/*
-	 * We try to make this request more audio at the correct rate for
-	 *  a given audio spec, so timing stays fairly faithful.
-	 * Also, we have it not block at all for the first two calls, so
-	 *  it seems like we're filling two audio fragments right out of the
-	 *  gate, like other SDL drivers tend to do.
-	 */
-	this->hidden->initial_calls = 2;
-	
 	/* We're ready to rock and roll. :-) */
 	return(0);
 }

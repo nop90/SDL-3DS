@@ -483,10 +483,11 @@ int hh= next_pow2(height);
 	
 	runThread = true;
 	svcCreateEvent(&privateVideoThreadRequest,0);
-	privateVideoThreadHandle = threadCreate(videoThread, (void *) this, STACKSIZE, 0x18, -2, true);
-
+ // ctrulib sys threads uses 0x18, so we use a lower priority, but higher than any other SDL thread
+	privateVideoThreadHandle = threadCreate(videoThread, (void *) this, STACKSIZE, 0x19, -2, true);
 	this->hidden->currentVideoSurface = current; 
 	/* We're done */
+
 	return(current);
 }
 
@@ -514,8 +515,6 @@ static void N3DS_UnlockHWSurface(_THIS, SDL_Surface *surface)
 static void videoThread(void* data)
 {
     _THIS = (SDL_VideoDevice *) data;
-
-	bool firstrun = true;
 
 	do {
 		if(!app_pause && !app_exiting) { 
