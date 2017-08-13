@@ -954,9 +954,9 @@ AC_HELP_STRING([--enable-n3ds], [configure SDL to work with n3ds [[default=no]]]
 		SOURCES="$SOURCES $srcdir/src/thread/n3ds/*.c"
 		have_threads=yes
 		AC_DEFINE(SDL_VIDEO_DRIVER_N3DS)
+		SOURCES="$SOURCES $srcdir/src/video/n3ds/vshader.pica"
 		SOURCES="$SOURCES $srcdir/src/video/n3ds/*.c"
 		have_video=yes
-		SOURCES="$SOURCES $srcdir/src/video/n3ds/vshader.pica"
 	fi
 }
 
