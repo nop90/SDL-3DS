@@ -62,7 +62,7 @@ AC_PROG_MAKE_SET
 AC_CHECK_TOOL(WINDRES, [windres], [:])
 
 dnl Set up the compiler and linker flags
-INCLUDE="-I$srcdir/include"
+INCLUDE="-I$srcdir/include -I\$(objects)"
 if test x$srcdir != x.; then
     # Remove SDL_config.h from the source directory, since it's the
     # default one, and we want to include the one that we generate.
@@ -956,7 +956,7 @@ AC_HELP_STRING([--enable-n3ds], [configure SDL to work with n3ds [[default=no]]]
 		AC_DEFINE(SDL_VIDEO_DRIVER_N3DS)
 		SOURCES="$SOURCES $srcdir/src/video/n3ds/*.c"
 		have_video=yes
-		PREBUILDOBJECTS="$srcdir/src/video/n3ds/vshader.shbin.lo"
+		SOURCES="$SOURCES $srcdir/src/video/n3ds/vshader.pica"
 	fi
 }
 
@@ -2923,6 +2923,7 @@ OBJECTS=`echo $OBJECTS | sed 's,[[^ ]]*/\([[^ ]]*\)\.m,$(objects)/\1.lo,g'`
 OBJECTS=`echo $OBJECTS | sed 's,[[^ ]]*/\([[^ ]]*\)\.c,$(objects)/\1.lo,g'`
 OBJECTS=`echo $OBJECTS | sed 's,[[^ ]]*/\([[^ ]]*\)\.S,$(objects)/\1.lo,g'`
 OBJECTS=`echo $OBJECTS | sed 's,[[^ ]]*/\([[^ ]]*\)\.rc,$(objects)/\1.lo,g'`
+OBJECTS=`echo $OBJECTS | sed 's,[[^ ]]*/\([[^ ]]*\)\.pica,$(objects)/\1.shbin.lo,g'`
 
 SDLMAIN_OBJECTS=`echo $SDLMAIN_SOURCES | sed 's,[[^ ]]*/\([[^ ]]*\)\.cc,$(objects)/\1.lo,g'`
 SDLMAIN_OBJECTS=`echo $SDLMAIN_OBJECTS | sed 's,[[^ ]]*/\([[^ ]]*\)\.m,$(objects)/\1.lo,g'`
@@ -2986,7 +2987,6 @@ AC_SUBST(ac_aux_dir)
 AC_SUBST(INCLUDE)
 AC_SUBST(SOURCES)
 AC_SUBST(OBJECTS)
-AC_SUBST(PREBUILDOBJECTS)
 AC_SUBST(SDLMAIN_SOURCES)
 AC_SUBST(SDLMAIN_OBJECTS)
 AC_SUBST(SDLMAIN_LDFLAGS)
