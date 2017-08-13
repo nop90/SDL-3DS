@@ -932,9 +932,15 @@ AC_HELP_STRING([--enable-n3ds], [configure SDL to work with n3ds [[default=no]]]
         , enable_n3ds=no)
 	if test x$enable_n3ds = xyes; then
         ARCH=n3ds
-        EXTRA_CFLAGS="$EXTRA_CFLAGS -D_3DS"
-        CFLAGS="$CFLAGS -D_3DS"
-        EXTRA_LDFLAGS="$EXTRA_LDFLAGS -L${DEVKITPRO}/libctru/lib -lcitro3d -lctru -lm"
+        N3DS_CFLAGS="-ffunction-sections -fdata-sections -march=armv6k \
+                     -mtune=mpcore -mfloat-abi=hard -mword-relocations \
+                     -I$DEVKITPRO/libctru/include -DARM11 -D_3DS"
+        EXTRA_CFLAGS="$EXTRA_CFLAGS $N3DS_CFLAGS"
+        CFLAGS="$CFLAGS $N3DS_CFLAGS"
+        SDL_CFLAGS="$SDL_CFLAGS $N3DS_CFLAGS"
+        SDL_LIBS="-specs=3dsx.specs -march=armv6k -mfloat-abi=hard \
+                  -L${DEVKITPRO}/portlibs/3ds $SDL_LIBS \
+                  -L${DEVKITPRO}/libctru/lib -lcitro3d -lctru"
  		AC_DEFINE(SDL_TIMER_N3DS)
 		SOURCES="$SOURCES $srcdir/src/timer/n3ds/*.c"
 		have_timers=yes
