@@ -1,0 +1,27 @@
+diff -Naur SDL_mixer-1.2.12/configure.in SDL_mixer-1.2.12_new/configure.in
+--- SDL_mixer-1.2.12/configure.in	2012-01-15 23:01:05 +0100
++++ SDL_mixer-1.2.12_new/configure.in	2017-08-13 22:25:51 +0200
+@@ -429,8 +429,9 @@
+ if test x$enable_music_ogg = xyes; then
+     if test x$enable_music_ogg_tremor = xyes; then
+         AC_CHECK_HEADER([tremor/ivorbisfile.h], [have_tremor_hdr=yes])
+-        AC_CHECK_LIB([vorbisidec], [ov_open_callbacks], [have_tremor_lib=yes])
+-        if test x$have_tremor_hdr = xyes -a x$have_tremor_lib = xyes; then
++ #       AC_CHECK_LIB([vorbisidec], [ov_open_callbacks], [have_tremor_lib=yes])
++ #       if test x$have_tremor_hdr = xyes -a x$have_tremor_lib = xyes; then
++        if test x$have_tremor_hdr = xyes ; then
+             case "$host" in
+                 *-*-darwin*)
+                     ogg_lib=[`find_lib libvorbisidec.dylib`]
+diff -Naur SDL_mixer-1.2.12/music_ogg.c SDL_mixer-1.2.12_new/music_ogg.c
+--- SDL_mixer-1.2.12/music_ogg.c	2012-01-15 23:01:05 +0100
++++ SDL_mixer-1.2.12_new/music_ogg.c	2017-08-13 22:38:12 +0200
+@@ -129,7 +129,7 @@
+ {
+ 	int section;
+ 	int len;
+-	char data[4096];
++static	char data[4096];
+ 	SDL_AudioCVT *cvt;
+ 
+ #ifdef OGG_USE_TREMOR

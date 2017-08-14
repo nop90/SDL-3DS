@@ -12,6 +12,7 @@ TOC
 ============
 
 - Credits
+- Installation
 - Video
 - Events
 - Key input
@@ -22,8 +23,22 @@ TOC
 CREDITS
 ============
 
-This port of the SDL 1.2 lib to 3ds was made with the help of several coders of the 3ds scene: Xerpi, Rikku2000, Nop90, Wenting
+This port of the SDL 1.2 lib to 3ds was made with the help of several coders of the 3ds scene: Xerpi, Rikku2000, Nop90, Wenting,
+The autotools scripts where tuned with the help of WinterMute (maintainer of DevkitPro)
 
+INSTALLATION
+============
+
+Run make all to build and install:
+ - SDL
+ - SDL_ttf
+ - SDL_mixer
+ - SDL_image
+ - SDL_net
+ - SDL_sound
+ - SDL_gfx
+ 
+The installation script for SDL_image and SDL_gfx need to be fixed, so the global makefile uses two prebuilt makefiles. 
 
 VIDEO
 ============

@@ -1,0 +1,12 @@
+diff -Naur SDL_net-1.2.8/SDLnetsys.h SDL_net-1.2.8_new/SDLnetsys.h
+--- SDL_net-1.2.8/SDLnetsys.h	2012-01-15 17:20:10 +0100
++++ SDL_net-1.2.8_new/SDLnetsys.h	2017-08-14 09:30:59 +0200
+@@ -60,7 +60,7 @@
+ #include <netinet/tcp.h>
+ #endif
+ #include <sys/socket.h>
+-#include <net/if.h>
++//#include <net/if.h>
+ #include <netdb.h>
+ #endif /* WIN32 */
+ 
