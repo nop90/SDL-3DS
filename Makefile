@@ -92,7 +92,7 @@ $(SDL_TTF): $(SDL_TTF_SRC)
 	@[ -d $(SDL_TTF_VERSION) ] || tar -xzf $<
 	@cd $(SDL_TTF_VERSION) && \
 	 ./autogen.sh &&\
-	 ./configure --prefix=$(LIBS_PATH)/3ds/SDL --host=arm-none-eabi --disable-shared --enable-static
+	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static
 	@$(MAKE) -C $(SDL_TTF_VERSION)
 
 $(SDL_IMAGE): $(SDL_IMAGE_SRC)
@@ -100,7 +100,7 @@ $(SDL_IMAGE): $(SDL_IMAGE_SRC)
 	@cd $(SDL_IMAGE_VERSION) && \
 	 cp ../SDL_image_Makefile Makefile
 #	 ./autogen.sh && \
-#	 ./configure --prefix=$(LIBS_PATH)/3ds/SDL --host=arm-none-eabi --disable-shared --enable-static \	
+#	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static \	
 #	 --enable-bmp --enable-gif --enable-lbm --enable-pcx --enable-pnm --enable-tga --enable-xcf --enable-xpm --enable-xv --enable-jpg --enable-png
 	@$(MAKE) -C $(SDL_IMAGE_VERSION)
         
@@ -109,7 +109,7 @@ $(SDL_MIXER): $(SDL_MIXER_SRC)
 	@cd $(SDL_MIXER_VERSION) && \
 	 patch -Np1 -i ../$(SDL_MIXER_VERSION).patch && \
 	 ./autogen.sh &&\
-     ./configure --prefix=$(LIBS_PATH)/3ds/SDL --host=arm-none-eabi --disable-shared --enable-static \
+     ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static \
 	 --disable-music-cmd --enable-music-wave --enable-music-midi --enable-music-mod --enable-music-mp3-mad-gpl --enable-music-ogg --enable-music-ogg-tremor 
 	@$(MAKE) -C $(SDL_MIXER_VERSION)
 
@@ -118,7 +118,7 @@ $(SDL_NET): $(SDL_NET_SRC)
 	@cd $(SDL_NET_VERSION) && \
 	 patch -Np1 -i ../$(SDL_NET_VERSION).patch && \
 	 ./autogen.sh &&\
-	 ./configure --prefix=$(LIBS_PATH)/3ds/SDL --host=arm-none-eabi --disable-shared --enable-static
+	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static
 	@$(MAKE) -C $(SDL_NET_VERSION)
 
 $(SDL_GFX): $(SDL_GFX_SRC)
@@ -126,13 +126,13 @@ $(SDL_GFX): $(SDL_GFX_SRC)
 	@cd $(SDL_GFX_VERSION) && \
 	 cp ../SDL_gfx_Makefile Makefile
 #	 ./autogen.sh &&\
-#	 ./configure --prefix=$(LIBS_PATH)/3ds/SDL --host=arm-none-eabi --disable-shared --enable-static
+#	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static
 	@$(MAKE) -C $(SDL_GFX_VERSION)
 
 $(SDL_SOUND): $(SDL_SOUND_SRC)
 	@[ -d $(SDL_SOUND_VERSION) ] || tar -xzf $<
 	@cd $(SDL_SOUND_VERSION) && \
-	 ./configure --prefix=$(LIBS_PATH)/3ds/SDL --host=arm-none-eabi --disable-shared --enable-static
+	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static
 	@$(MAKE) -C $(SDL_SOUND_VERSION)
 
 install:
