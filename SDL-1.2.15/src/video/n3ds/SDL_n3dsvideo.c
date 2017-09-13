@@ -57,20 +57,16 @@ static Uint32 n3ds_palette[256] = {0};
 // Used to transfer the final rendered display to the framebuffer
 #define DISPLAY_TRANSFER_FLAGS0 \
 	(GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) | \
-	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8) | \
-	GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_XY))
+	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8)) 
 #define DISPLAY_TRANSFER_FLAGS1 \
 	(GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) | \
-	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB8) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8) | \
-	GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_XY))
+	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB8) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8)) 
 #define DISPLAY_TRANSFER_FLAGS2 \
 	(GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) | \
-	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB5A1) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB565) | \
-	GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_XY))
+	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB5A1) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB565))
 #define DISPLAY_TRANSFER_FLAGS3 \
 	(GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) | \
-	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB5A1) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB565) | \
-	GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_XY))
+	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB5A1) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB565))
 
 // Used to convert textures to 3DS tiled format
 // Note: vertical flip flag set so 0,0 is top left of texture
@@ -105,7 +101,7 @@ static int textureTranferFlags[4] = { TEXTURE_TRANSFER_FLAGS0, TEXTURE_TRANSFER_
 static int displayTranferFlags[4] = { DISPLAY_TRANSFER_FLAGS0, DISPLAY_TRANSFER_FLAGS1, DISPLAY_TRANSFER_FLAGS2, DISPLAY_TRANSFER_FLAGS3};
 static unsigned int clearcolors[4] = { CLEAR_COLOR0, CLEAR_COLOR1, CLEAR_COLOR2, CLEAR_COLOR3};
 
-static void sceneInit(GSPGPU_FramebufferFormats mode);
+static void sceneInit(GSPGPU_FramebufferFormats mode, bool scale);
 static void sceneExit(void);
 void drawTexture( int x, int y, int width, int height, float left, float right, float top, float bottom);
 
@@ -401,7 +397,7 @@ int hh= next_pow2(height);
 	if(setVideoModecount>1) sceneExit(); // unload rendertarget and the shader
 	
 	//setup the screens mode
-	sceneInit(this->hidden->mode);
+	sceneInit(this->hidden->mode, (this->hidden->fitscreen & (SDL_FITWIDTH | SDL_FITHEIGHT)) ? false:true);
 
 	if((flags & SDL_CONSOLETOP) && !(this->hidden->screens & SDL_TOPSCR)) {
 		consoleInit(GFX_TOP, NULL);
@@ -444,27 +440,6 @@ int hh= next_pow2(height);
 	this->hidden->b2 = ((float)this->hidden->y2+(float)this->hidden->h2)/(float)this->hidden->h;
 
 //Set scaling
-/*
-	if(flags & SDL_FULLSCREEN) 
-//		flags |= (SDL_FITWIDTH | SDL_FITHEIGHT);
-		this->hidden->fitscreen = (SDL_FITWIDTH | SDL_FITHEIGHT);
-	else
-		this->hidden->fitscreen = flags & (SDL_FITWIDTH | SDL_FITHEIGHT);
-
-	if((this->hidden->fitscreen & SDL_FITWIDTH)&&(this->hidden->fitscreen & SDL_FITHEIGHT)) {
-		this->hidden->scalex= 400.0/(float)this->hidden->w1;
-		this->hidden->scaley= 240.0/(float)this->hidden->h1;
-	} else if(this->hidden->fitscreen & SDL_FITWIDTH) {
-		this->hidden->scalex= 400.0/(float)this->hidden->w1;
-		this->hidden->scaley= this->hidden->scalex;//1.0f;
-	} else 	if(this->hidden->fitscreen & SDL_FITHEIGHT) {
-		this->hidden->scaley= 240.0/(float)this->hidden->h1;
-		this->hidden->scalex= this->hidden->scaley;//1.0f;
-	} else {
-		this->hidden->scalex= 1.0f;
-		this->hidden->scaley= 1.0f;
-	}
-*/
 
 	N3DS_SetScaling(this);
 	
@@ -688,7 +663,7 @@ void N3DS_VideoQuit(_THIS)
 
 
 //---------------------------------------------------------------------------------
-static void sceneInit(GSPGPU_FramebufferFormats mode) {
+static void sceneInit(GSPGPU_FramebufferFormats mode, bool scale) {
 //---------------------------------------------------------------------------------
 	// Load the vertex shader, create a shader program and bind it
 	vshader_dvlb = DVLB_ParseFile((u32*)vshader_shbin, vshader_shbin_size);
@@ -725,15 +700,26 @@ static void sceneInit(GSPGPU_FramebufferFormats mode) {
 
 
 	// Initialize the top screen render target
-	VideoSurface1 = C3D_RenderTargetCreate(240*2, 400*2, mode, GPU_RB_DEPTH24_STENCIL8);
+	if (scale)
+		VideoSurface1 = C3D_RenderTargetCreate(240*2, 400*2, mode, GPU_RB_DEPTH24_STENCIL8);
+	else
+		VideoSurface1 = C3D_RenderTargetCreate(240, 400, mode, GPU_RB_DEPTH24_STENCIL8);
 	C3D_RenderTargetSetClear(VideoSurface1, C3D_CLEAR_ALL, clearcolors[mode], 0);
-	C3D_RenderTargetSetOutput(VideoSurface1, GFX_TOP, GFX_LEFT, displayTranferFlags[mode]);
-
+	if(scale)	
+		C3D_RenderTargetSetOutput(VideoSurface1, GFX_TOP, GFX_LEFT, displayTranferFlags[mode] | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_XY));
+	else
+		C3D_RenderTargetSetOutput(VideoSurface1, GFX_TOP, GFX_LEFT, displayTranferFlags[mode] | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO));
+	
 	// Initialize the bottom screen render target
-	VideoSurface2 = C3D_RenderTargetCreate(240*2, 320*2, mode, GPU_RB_DEPTH24_STENCIL8);
-//	VideoSurface2 = C3D_RenderTargetCreate(240*2, 400*2, mode, GPU_RB_DEPTH24_STENCIL8);
+	if (scale)
+		VideoSurface2 = C3D_RenderTargetCreate(240*2, 320*2, mode, GPU_RB_DEPTH24_STENCIL8);
+	else
+		VideoSurface2 = C3D_RenderTargetCreate(240, 320, mode, GPU_RB_DEPTH24_STENCIL8);
 	C3D_RenderTargetSetClear(VideoSurface2, C3D_CLEAR_ALL, clearcolors[mode], 0);
-	C3D_RenderTargetSetOutput(VideoSurface2, GFX_BOTTOM, GFX_LEFT, displayTranferFlags[mode]);
+	if (scale)	
+		C3D_RenderTargetSetOutput(VideoSurface2, GFX_BOTTOM, GFX_LEFT, displayTranferFlags[mode] | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_XY));
+	else
+		C3D_RenderTargetSetOutput(VideoSurface2, GFX_BOTTOM, GFX_LEFT, displayTranferFlags[mode] | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO));
 
 	// Configure depth test to overwrite pixels with the same depth (needed to draw overlapping sprites)
 //	C3D_DepthTest(true, GPU_GEQUAL, GPU_WRITE_ALL);
