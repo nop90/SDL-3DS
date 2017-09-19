@@ -41,13 +41,20 @@ void SDL_SYS_JoystickUpdate (SDL_Joystick *joystick) {
 
 	circlePosition circlePad;
 	hidCircleRead(&circlePad);
-	if (old_x != circlePad.dx) {
-		old_x = circlePad.dx;
-		SDL_PrivateJoystickAxis (joystick, 0, circlePad.dx * 200);
+	int x,y;
+	x = circlePad.dx;
+	y = circlePad.dy;
+	if (x > 156) x= 156; 
+	if (x < -156) x= -156; 
+	if (y > 156) y= 156; 
+	if (y < -156) y= -156; 
+	if (old_x != x) {
+		old_x = x;
+		SDL_PrivateJoystickAxis (joystick, 0, x * 210);
 	}
-	if (old_y != circlePad.dy) {
-		old_y = circlePad.dy;
-		SDL_PrivateJoystickAxis (joystick, 1, - circlePad.dy * 200);
+	if (old_y != y) {
+		old_y = y;
+		SDL_PrivateJoystickAxis (joystick, 1, - y * 210);
 	}	
 
 	key_press = hidKeysDown ();
