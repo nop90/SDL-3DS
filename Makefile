@@ -88,51 +88,57 @@ $(SDL):
 	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --enable-n3ds --disable-shared --enable-static
 	@$(MAKE) -C $(SDL_VERSION) >&1
 	
-$(SDL_TTF): $(SDL_TTF_SRC)
+$(SDL_TTF): $(SDL_TTF_SRC) $(SDL)
 	@[ -d $(SDL_TTF_VERSION) ] || tar -xzf $<
 	@cd $(SDL_TTF_VERSION) && \
+	export CPPFLAGS="-I../$(SDL_VERSION)/include"; export LDFLAGS="-L../$(SDL_VERSION)/build"; \
 	 ./autogen.sh &&\
 	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static
 	@$(MAKE) -C $(SDL_TTF_VERSION)
 
-$(SDL_IMAGE): $(SDL_IMAGE_SRC)
+$(SDL_IMAGE): $(SDL_IMAGE_SRC) $(SDL)
 	@[ -d $(SDL_IMAGE_VERSION) ] || tar -xzf $<
 	@cd $(SDL_IMAGE_VERSION) && \
-	 cp ../SDL_image_Makefile Makefile
+	cp ../SDL_image_Makefile Makefile
+	export CPPFLAGS="-I../$(SDL_VERSION)/include"; export LDFLAGS="-L../$(SDL_VERSION)/build"; \
 #	 ./autogen.sh && \
 #	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static \	
-#	 --enable-bmp --enable-gif --enable-lbm --enable-pcx --enable-pnm --enable-tga --enable-xcf --enable-xpm --enable-xv --enable-jpg --enable-png
+#	 --enable-bmp --enable-gif --enable-lbm --enable-pcx --enable-pnm --enable-tga --enable-xcf --enable-xpm --enable-xv --enable-jpg --enable-png; \
 	@$(MAKE) -C $(SDL_IMAGE_VERSION)
         
-$(SDL_MIXER): $(SDL_MIXER_SRC)
+$(SDL_MIXER): $(SDL_MIXER_SRC) $(SDL)
 	@[ -d $(SDL_MIXER_VERSION) ] || tar --exclude=SDL_mixer-1.2.12/Xcode -xzf $< 
 	@cd $(SDL_MIXER_VERSION) && \
-	 patch -Np1 -i ../$(SDL_MIXER_VERSION).patch && \
-	 ./autogen.sh &&\
+	export CPPFLAGS="-I../$(SDL_VERSION)/include"; export LDFLAGS="-L../$(SDL_VERSION)/build"; \
+	patch -Np1 -i ../$(SDL_MIXER_VERSION).patch && \
+	./autogen.sh &&\
      ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static \
-	 --disable-music-cmd --enable-music-wave --enable-music-midi --enable-music-mod --enable-music-mp3-mad-gpl --enable-music-ogg --enable-music-ogg-tremor 
+	 --disable-music-cmd --enable-music-wave --enable-music-midi --enable-music-mod --enable-music-mp3-mad-gpl --enable-music-ogg --enable-music-ogg-tremor; \
 	@$(MAKE) -C $(SDL_MIXER_VERSION)
 
-$(SDL_NET): $(SDL_NET_SRC)
+$(SDL_NET): $(SDL_NET_SRC) $(SDL)
 	@[ -d $(SDL_NET_VERSION) ] || tar -xzf $<
 	@cd $(SDL_NET_VERSION) && \
+	export CPPFLAGS="-I../$(SDL_VERSION)/include"; export LDFLAGS="-L../$(SDL_VERSION)/build"; \
 	 patch -Np1 -i ../$(SDL_NET_VERSION).patch && \
 	 ./autogen.sh &&\
-	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static
+	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static; \
 	@$(MAKE) -C $(SDL_NET_VERSION)
 
-$(SDL_GFX): $(SDL_GFX_SRC)
+$(SDL_GFX): $(SDL_GFX_SRC) $(SDL)
 	@[ -d $(SDL_GFX_VERSION) ] || tar -xzf $<
 	@cd $(SDL_GFX_VERSION) && \
-	 cp ../SDL_gfx_Makefile Makefile
+	export CPPFLAGS="-I../$(SDL_VERSION)/include"; export LDFLAGS="-L../$(SDL_VERSION)/build"; \
+	 cp ../SDL_gfx_Makefile Makefile; \
 #	 ./autogen.sh &&\
-#	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static
+#	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static; \
 	@$(MAKE) -C $(SDL_GFX_VERSION)
 
-$(SDL_SOUND): $(SDL_SOUND_SRC)
+$(SDL_SOUND): $(SDL_SOUND_SRC) $(SDL)
 	@[ -d $(SDL_SOUND_VERSION) ] || tar -xzf $<
 	@cd $(SDL_SOUND_VERSION) && \
-	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static
+	export CPPFLAGS="-I../$(SDL_VERSION)/include"; export LDFLAGS="-L../$(SDL_VERSION)/build"; \
+	 ./configure --prefix=$(LIBS_PATH)/3ds --host=arm-none-eabi --disable-shared --enable-static; \
 	@$(MAKE) -C $(SDL_SOUND_VERSION)
 
 install:
